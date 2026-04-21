@@ -1,0 +1,1442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IMDB Movie Analytics Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-primary: #0d1117;
+    --bg-secondary: #161b22;
+    --bg-card: #1c2230;
+    --bg-card-hover: #212840;
+    --border: rgba(255,255,255,0.07);
+    --accent-blue: #4f9cf9;
+    --accent-teal: #2dd4bf;
+    --accent-purple: #a78bfa;
+    --accent-amber: #fbbf24;
+    --accent-rose: #fb7185;
+    --accent-green: #34d399;
+    --text-primary: #e6edf3;
+    --text-secondary: #8b949e;
+    --text-muted: #484f58;
+    --sidebar-w: 72px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: var(--sidebar-w);
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px 0;
+    gap: 4px;
+    z-index: 100;
+    flex-shrink: 0;
+  }
+  .sidebar-logo {
+    width: 40px; height: 40px;
+    background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 16px;
+    margin-bottom: 12px;
+    cursor: pointer;
+  }
+  .nav-item {
+    width: 52px; height: 52px;
+    border-radius: 12px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 3px;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--text-secondary);
+    font-size: 10px;
+    font-weight: 500;
+  }
+  .nav-item:hover { background: rgba(255,255,255,0.06); color: var(--text-primary); }
+  .nav-item.active { background: rgba(79,156,249,0.15); color: var(--accent-blue); }
+  .nav-item svg { width: 18px; height: 18px; }
+  .sidebar-spacer { flex: 1; }
+
+  /* ── MAIN ── */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* ── TOPBAR ── */
+  .topbar {
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 24px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .topbar-title h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+  .topbar-title p { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+  .topbar-controls { display: flex; gap: 10px; align-items: center; }
+  .year-badge {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-size: 13px;
+    color: var(--text-primary);
+    display: flex; align-items: center; gap: 6px;
+    cursor: pointer;
+  }
+  .btn-reset {
+    background: rgba(79,156,249,0.1);
+    border: 1px solid rgba(79,156,249,0.3);
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-size: 13px;
+    color: var(--accent-blue);
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.2s;
+  }
+  .btn-reset:hover { background: rgba(79,156,249,0.2); }
+
+  /* ── PAGE CONTAINER ── */
+  .page { display: none; flex: 1; overflow-y: auto; padding: 20px 24px; gap: 20px; flex-direction: column; }
+  .page.active { display: flex; }
+
+  /* ── KPI CARDS ── */
+  .kpi-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; }
+  .kpi-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s;
+  }
+  .kpi-card:hover { transform: translateY(-2px); }
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+  .kpi-card.blue::before { background: var(--accent-blue); }
+  .kpi-card.teal::before { background: var(--accent-teal); }
+  .kpi-card.purple::before { background: var(--accent-purple); }
+  .kpi-card.amber::before { background: var(--accent-amber); }
+  .kpi-card.rose::before { background: var(--accent-rose); }
+  .kpi-card.green::before { background: var(--accent-green); }
+  .kpi-label { font-size: 11px; color: var(--text-secondary); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+  .kpi-value { font-family: 'Syne', sans-serif; font-size: 24px; font-weight: 800; margin: 4px 0; }
+  .kpi-change { font-size: 11px; display: flex; align-items: center; gap: 4px; }
+  .kpi-change.pos { color: var(--accent-teal); }
+  .kpi-change.neg { color: var(--accent-rose); }
+  .kpi-sparkline { height: 32px; margin-top: 6px; }
+
+  /* ── LAYOUT ROWS ── */
+  .row { display: grid; gap: 14px; }
+  .row-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .row-2 { grid-template-columns: 1.3fr 1fr; }
+  .row-2r { grid-template-columns: 1fr 1.3fr; }
+  .row-sidebar { grid-template-columns: 260px 1fr 1fr; }
+
+  /* ── CHART CARDS ── */
+  .chart-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .chart-header { display: flex; align-items: center; justify-content: space-between; }
+  .chart-title { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; }
+  .chart-subtitle { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+  .chart-meta { font-size: 11px; color: var(--text-muted); }
+  .chart-badge {
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.06);
+    color: var(--text-secondary);
+  }
+  .chart-insight {
+    font-size: 11px;
+    color: var(--text-secondary);
+    padding: 6px 10px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 6px;
+    border-left: 2px solid var(--accent-teal);
+  }
+  .chart-canvas-wrap { position: relative; }
+
+  /* ── FILTER PANEL ── */
+  .filter-panel {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .filter-title { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; margin-bottom: 14px; }
+  .filter-label { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; font-weight: 500; }
+  .filter-section { margin-bottom: 16px; }
+
+  /* Range Slider */
+  .range-track {
+    position: relative;
+    height: 4px;
+    background: var(--bg-primary);
+    border-radius: 2px;
+    margin: 18px 0 8px;
+  }
+  .range-fill {
+    position: absolute;
+    height: 100%;
+    background: var(--accent-blue);
+    border-radius: 2px;
+  }
+  .range-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-secondary); }
+  input[type=range] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 4px;
+    background: transparent;
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: var(--accent-blue);
+    border: 2px solid var(--bg-card);
+    pointer-events: all;
+    cursor: pointer;
+    box-shadow: 0 0 6px rgba(79,156,249,0.5);
+  }
+
+  /* Genre Chips */
+  .genre-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .chip.active {
+    background: rgba(79,156,249,0.2);
+    border-color: rgba(79,156,249,0.5);
+    color: var(--accent-blue);
+  }
+  .chip:hover:not(.active) { border-color: rgba(255,255,255,0.15); color: var(--text-primary); }
+
+  /* Quick range */
+  .quick-range { display: flex; gap: 4px; }
+  .qbtn {
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    cursor: pointer;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    transition: all 0.15s;
+  }
+  .qbtn.active {
+    background: rgba(79,156,249,0.2);
+    border-color: rgba(79,156,249,0.4);
+    color: var(--accent-blue);
+  }
+
+  /* Filter meta */
+  .filter-meta { padding: 10px; background: rgba(255,255,255,0.03); border-radius: 8px; font-size: 12px; margin-top: 8px; }
+  .filter-meta-row { display: flex; justify-content: space-between; margin-bottom: 4px; }
+  .filter-meta-row:last-child { margin-bottom: 0; }
+  .filter-meta-label { color: var(--text-secondary); }
+  .filter-meta-val { font-weight: 600; }
+  .filter-meta-val.pos { color: var(--accent-teal); }
+  .filter-meta-val.neg { color: var(--accent-rose); }
+
+  /* Min votes */
+  .min-votes-row { display: flex; align-items: center; justify-content: space-between; }
+  .votes-select {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 8px;
+    color: var(--text-primary);
+    font-size: 12px;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+  }
+
+  /* ── INSIGHTS PAGE ── */
+  .insights-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .insight-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+    transition: transform 0.2s;
+  }
+  .insight-card:hover { transform: translateY(-2px); }
+  .insight-card.featured { grid-column: span 2; }
+  .insight-card.full { grid-column: span 3; }
+  .insight-icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 12px;
+    font-size: 18px;
+  }
+  .insight-card h3 { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+  .insight-card p { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+  .insight-stat { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 800; margin: 10px 0 4px; }
+  .insight-stat-label { font-size: 12px; color: var(--text-secondary); }
+  .insight-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    margin-right: 4px;
+    margin-top: 6px;
+  }
+  .tag-blue { background: rgba(79,156,249,0.15); color: var(--accent-blue); }
+  .tag-teal { background: rgba(45,212,191,0.15); color: var(--accent-teal); }
+  .tag-purple { background: rgba(167,139,250,0.15); color: var(--accent-purple); }
+  .tag-amber { background: rgba(251,191,36,0.15); color: var(--accent-amber); }
+  .tag-rose { background: rgba(251,113,133,0.15); color: var(--accent-rose); }
+
+  .insight-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 14px 0;
+  }
+  .insight-list { list-style: none; }
+  .insight-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+  .insight-list li:last-child { border-bottom: none; }
+  .insight-list li::before {
+    content: '→';
+    color: var(--accent-blue);
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .insight-bar-row { display: flex; align-items: center; gap: 10px; margin: 6px 0; }
+  .insight-bar-label { font-size: 12px; width: 90px; flex-shrink: 0; color: var(--text-secondary); }
+  .insight-bar-track { flex: 1; height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden; }
+  .insight-bar-fill { height: 100%; border-radius: 3px; }
+  .insight-bar-val { font-size: 12px; width: 40px; text-align: right; font-weight: 600; }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+
+  /* ── TOOLTIP ── */
+  .chartjs-tooltip {
+    background: rgba(22,27,34,0.95) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 8px !important;
+  }
+
+  /* FOOTER */
+  .footer {
+    padding: 10px 24px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sidebar-logo">M</div>
+
+  <div class="nav-item active" data-page="overview" onclick="switchPage('overview', this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+    Overview
+  </div>
+  <div class="nav-item" data-page="insights" onclick="switchPage('insights', this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+    Insights
+  </div>
+
+  <div class="sidebar-spacer"></div>
+
+  <div class="nav-item" onclick="resetAll()" title="Reset Filters">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+    Reset
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-title">
+      <h1>IMDB Movie Analytics Dashboard</h1>
+      <p>Revenue, Genre, Release Timing and Rating Insights &nbsp;•&nbsp; Based on 45,000+ movies dataset</p>
+    </div>
+    <div class="topbar-controls">
+      <div class="year-badge" id="yearBadge">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        1990 – 2017
+      </div>
+      <button class="btn-reset" onclick="resetAll()">↺ Reset</button>
+    </div>
+  </div>
+
+  <!-- OVERVIEW PAGE -->
+  <div class="page active" id="page-overview">
+
+    <!-- KPI ROW -->
+    <div class="kpi-row" id="kpiRow">
+      <div class="kpi-card blue">
+        <div class="kpi-label">Total Movies</div>
+        <div class="kpi-value" id="kpiMovies">5,116</div>
+        <div class="kpi-change pos" id="kpiMoviesChg">▲ Valid (budget+revenue)</div>
+      </div>
+      <div class="kpi-card teal">
+        <div class="kpi-label">Avg Revenue</div>
+        <div class="kpi-value" id="kpiRevenue">$108M</div>
+        <div class="kpi-change pos">▲ Worldwide box office</div>
+      </div>
+      <div class="kpi-card purple">
+        <div class="kpi-label">Avg ROI</div>
+        <div class="kpi-value" id="kpiROI">2.4×</div>
+        <div class="kpi-change pos">▲ Revenue / Budget</div>
+      </div>
+      <div class="kpi-card amber">
+        <div class="kpi-label">Avg Rating</div>
+        <div class="kpi-value" id="kpiRating">6.22</div>
+        <div class="kpi-change pos">▲ IMDB score</div>
+      </div>
+      <div class="kpi-card rose">
+        <div class="kpi-label">Total Budget</div>
+        <div class="kpi-value" id="kpiBudget">$196B</div>
+        <div class="kpi-change pos">▲ Worldwide</div>
+      </div>
+      <div class="kpi-card green">
+        <div class="kpi-label">Total Revenue</div>
+        <div class="kpi-value" id="kpiTotalRev">$553B</div>
+        <div class="kpi-change pos">▲ Worldwide</div>
+      </div>
+    </div>
+
+    <!-- MAIN GRID -->
+    <div class="row row-sidebar">
+
+      <!-- FILTERS -->
+      <div class="filter-panel">
+        <div class="filter-title">Filters</div>
+
+        <div class="filter-section">
+          <div class="filter-label">Year Range</div>
+          <div class="range-track" id="rangeTrack">
+            <div class="range-fill" id="rangeFill"></div>
+            <input type="range" id="yearMin" min="1990" max="2017" value="1990">
+            <input type="range" id="yearMax" min="1990" max="2017" value="2017">
+          </div>
+          <div class="range-labels">
+            <span id="lblYearMin">1990</span>
+            <span id="lblYearMax">2017</span>
+          </div>
+        </div>
+
+        <div class="filter-section">
+          <div class="filter-label">Genres (Include)</div>
+          <div class="genre-chips" id="genreChips">
+            <div class="chip active" data-genre="Action">Action</div>
+            <div class="chip active" data-genre="Adventure">Adventure</div>
+            <div class="chip active" data-genre="Comedy">Comedy</div>
+            <div class="chip active" data-genre="Drama">Drama</div>
+            <div class="chip active" data-genre="Thriller">Thriller</div>
+            <div class="chip active" data-genre="Science Fiction">Sci-Fi</div>
+            <div class="chip active" data-genre="Horror">Horror</div>
+            <div class="chip active" data-genre="Animation">Animation</div>
+            <div class="chip active" data-genre="Romance">Romance</div>
+            <div class="chip active" data-genre="Crime">Crime</div>
+            <div class="chip active" data-genre="Family">Family</div>
+            <div class="chip active" data-genre="Fantasy">Fantasy</div>
+          </div>
+        </div>
+
+        <div class="filter-section">
+          <div class="filter-label">Quick Range</div>
+          <div class="quick-range">
+            <div class="qbtn" onclick="setQuick(5)">5Y</div>
+            <div class="qbtn" onclick="setQuick(10)">10Y</div>
+            <div class="qbtn" onclick="setQuick(20)">20Y</div>
+            <div class="qbtn active" onclick="setQuick(28)">All</div>
+          </div>
+        </div>
+
+        <div class="filter-section">
+          <div class="filter-label">Min Vote Count</div>
+          <div class="min-votes-row">
+            <span style="font-size:12px;color:var(--text-secondary)">Min Votes</span>
+            <select class="votes-select" id="minVotes" onchange="applyFilters()">
+              <option value="0">All</option>
+              <option value="100">100+</option>
+              <option value="500" selected>500+</option>
+              <option value="1000">1,000+</option>
+              <option value="5000">5,000+</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="filter-meta" id="filterMeta">
+          <div class="filter-meta-row"><span class="filter-meta-label">Best Genre ROI</span><span class="filter-meta-val pos" id="metaBest">Animation (2.8×)</span></div>
+          <div class="filter-meta-row"><span class="filter-meta-label">Worst Genre ROI</span><span class="filter-meta-val neg" id="metaWorst">Crime (1.9×)</span></div>
+        </div>
+      </div>
+
+      <!-- BOX OFFICE SCATTER -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Box Office Success Analysis</div>
+            <div class="chart-subtitle">Budget vs Revenue (filtered movies)</div>
+          </div>
+          <span class="chart-badge" id="scatterCorr">Correlation: 0.72</span>
+        </div>
+        <div class="chart-canvas-wrap" style="height:240px">
+          <canvas id="scatterChart"></canvas>
+        </div>
+        <div class="chart-insight">Higher budgets generally show better box office success, but variance increases with budget size.</div>
+      </div>
+
+      <!-- GENRE ROI BAR -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Genre Profitability (ROI)</div>
+            <div class="chart-subtitle">Median Revenue/Budget multiple</div>
+          </div>
+          <span class="chart-badge">Top 12</span>
+        </div>
+        <div class="chart-canvas-wrap" style="height:240px">
+          <canvas id="roiChart"></canvas>
+        </div>
+        <div class="chart-insight">Animation and Horror genres lead in ROI due to low production costs.</div>
+      </div>
+    </div>
+
+    <!-- SECOND ROW -->
+    <div class="row row-3">
+
+      <!-- REVENUE BY MONTH -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Revenue by Release Month</div>
+            <div class="chart-subtitle">Avg worldwide revenue (USD M)</div>
+          </div>
+        </div>
+        <div class="chart-canvas-wrap" style="height:180px">
+          <canvas id="monthChart"></canvas>
+        </div>
+        <div class="chart-insight">Summer peaks (May–Jun) and Winter holiday peaks (Nov–Dec).</div>
+      </div>
+
+      <!-- BUDGET VS ROI -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Budget vs ROI</div>
+            <div class="chart-subtitle">Does bigger budget mean higher return?</div>
+          </div>
+          <span class="chart-badge">Correlation: 0.18</span>
+        </div>
+        <div class="chart-canvas-wrap" style="height:180px">
+          <canvas id="budgetRoiChart"></canvas>
+        </div>
+        <div class="chart-insight">ROI gains diminish at very high budget levels.</div>
+      </div>
+
+      <!-- RATING DIST BY GENRE -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Rating Distribution by Genre</div>
+            <div class="chart-subtitle">Median IMDB ratings</div>
+          </div>
+        </div>
+        <div class="chart-canvas-wrap" style="height:180px">
+          <canvas id="ratingGenreChart"></canvas>
+        </div>
+        <div class="chart-insight">Drama and Animation have consistently higher median ratings.</div>
+      </div>
+    </div>
+
+    <!-- THIRD ROW -->
+    <div class="row row-2">
+      <!-- YEAR TREND -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Industry Trend Over Time</div>
+            <div class="chart-subtitle">Avg Revenue & Budget by Year (USD M)</div>
+          </div>
+          <span class="chart-badge" id="yearTrendRange">1990–2017</span>
+        </div>
+        <div class="chart-canvas-wrap" style="height:190px">
+          <canvas id="yearTrendChart"></canvas>
+        </div>
+        <div class="chart-insight">Revenue has grown faster than budget, indicating improving efficiency over time.</div>
+      </div>
+
+      <!-- RATING HISTOGRAM -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Rating Distribution</div>
+            <div class="chart-subtitle">Number of ratings by score (user ratings)</div>
+          </div>
+        </div>
+        <div class="chart-canvas-wrap" style="height:190px">
+          <canvas id="ratingHistChart"></canvas>
+        </div>
+        <div class="chart-insight">Most users rate movies between 3.0–4.0, skewing toward positive scores.</div>
+      </div>
+    </div>
+
+  </div><!-- /overview page -->
+
+  <!-- INSIGHTS PAGE -->
+  <div class="page" id="page-insights">
+    <div style="padding-bottom:4px">
+      <h2 style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800">Key Insights</h2>
+      <p style="font-size:13px;color:var(--text-secondary);margin-top:4px">Data-driven findings from 45,000+ movies · 1916–2017</p>
+    </div>
+
+    <div class="insights-grid">
+
+      <!-- INSIGHT 1: ROI Champions -->
+      <div class="insight-card">
+        <div class="insight-icon" style="background:rgba(45,212,191,0.15)">🎬</div>
+        <h3>ROI Champions by Genre</h3>
+        <p>Horror and Animation deliver the highest return on investment despite modest budgets.</p>
+        <div style="margin-top:12px">
+          <div class="insight-bar-row">
+            <span class="insight-bar-label">Animation</span>
+            <div class="insight-bar-track"><div class="insight-bar-fill" style="width:100%;background:var(--accent-teal)"></div></div>
+            <span class="insight-bar-val">2.77×</span>
+          </div>
+          <div class="insight-bar-row">
+            <span class="insight-bar-label">Horror</span>
+            <div class="insight-bar-track"><div class="insight-bar-fill" style="width:92%;background:var(--accent-purple)"></div></div>
+            <span class="insight-bar-val">2.55×</span>
+          </div>
+          <div class="insight-bar-row">
+            <span class="insight-bar-label">Family</span>
+            <div class="insight-bar-track"><div class="insight-bar-fill" style="width:90%;background:var(--accent-blue)"></div></div>
+            <span class="insight-bar-val">2.49×</span>
+          </div>
+          <div class="insight-bar-row">
+            <span class="insight-bar-label">Adventure</span>
+            <div class="insight-bar-track"><div class="insight-bar-fill" style="width:83%;background:var(--accent-amber)"></div></div>
+            <span class="insight-bar-val">2.31×</span>
+          </div>
+          <div class="insight-bar-row">
+            <span class="insight-bar-label">Drama</span>
+            <div class="insight-bar-track"><div class="insight-bar-fill" style="width:66%;background:var(--accent-rose)"></div></div>
+            <span class="insight-bar-val">1.83×</span>
+          </div>
+        </div>
+        <span class="insight-tag tag-teal">High ROI</span>
+        <span class="insight-tag tag-blue">Genre Strategy</span>
+      </div>
+
+      <!-- INSIGHT 2: Release Timing -->
+      <div class="insight-card">
+        <div class="insight-icon" style="background:rgba(251,191,36,0.15)">📅</div>
+        <h3>Release Timing Matters</h3>
+        <p>The month a film releases significantly impacts its revenue. Summer and holiday windows dominate.</p>
+        <div class="insight-stat" style="color:var(--accent-amber)">+247%</div>
+        <div class="insight-stat-label">Revenue difference: June ($159.8M avg) vs January ($46.1M avg)</div>
+        <div class="insight-divider"></div>
+        <ul class="insight-list">
+          <li>June leads all months at $159.8M average revenue</li>
+          <li>May close second ($139.9M) — summer blockbuster season</li>
+          <li>November ($126.5M) benefits from Thanksgiving audiences</li>
+          <li>January is the weakest month — studios dump low-confidence films</li>
+        </ul>
+      </div>
+
+      <!-- INSIGHT 3: Rating quality -->
+      <div class="insight-card">
+        <div class="insight-icon" style="background:rgba(167,139,250,0.15)">⭐</div>
+        <h3>Quality vs Popularity</h3>
+        <p>Critical acclaim and commercial success don't always align by genre.</p>
+        <div class="insight-stat" style="color:var(--accent-purple)">6.5</div>
+        <div class="insight-stat-label">Animation median rating — highest of all genres</div>
+        <div class="insight-divider"></div>
+        <ul class="insight-list">
+          <li>Drama consistently scores highest (median 6.3/10)</li>
+          <li>Horror has lowest median rating (5.4) but 2nd best ROI</li>
+          <li>Animation: best of both — high ratings AND high ROI</li>
+          <li>Action earns most total revenue but mediocre ratings (5.9)</li>
+        </ul>
+      </div>
+
+      <!-- INSIGHT 4: Budget sweet spot (featured) -->
+      <div class="insight-card featured">
+        <div class="insight-icon" style="background:rgba(79,156,249,0.15)">💰</div>
+        <h3>The Budget Sweet Spot</h3>
+        <p>There's a clear budget tier where ROI is maximized. Ultra-high budgets ($150M+) show diminishing returns, while very low budgets are high-risk.</p>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:14px">
+          <div style="background:rgba(255,255,255,0.03);padding:12px;border-radius:8px;text-align:center">
+            <div style="font-size:11px;color:var(--text-secondary);margin-bottom:4px">&lt;$10M</div>
+            <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--accent-rose)">1.9×</div>
+            <div style="font-size:11px;color:var(--text-muted)">High risk</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.03);padding:12px;border-radius:8px;text-align:center">
+            <div style="font-size:11px;color:var(--text-secondary);margin-bottom:4px">$10–40M</div>
+            <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--accent-amber)">2.8×</div>
+            <div style="font-size:11px;color:var(--text-muted)">Sweet spot</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.03);padding:12px;border-radius:8px;text-align:center">
+            <div style="font-size:11px;color:var(--text-secondary);margin-bottom:4px">$40–100M</div>
+            <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--accent-teal)">2.5×</div>
+            <div style="font-size:11px;color:var(--text-muted)">Good return</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.03);padding:12px;border-radius:8px;text-align:center">
+            <div style="font-size:11px;color:var(--text-secondary);margin-bottom:4px">$100M+</div>
+            <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--accent-blue)">2.1×</div>
+            <div style="font-size:11px;color:var(--text-muted)">Diminishing</div>
+          </div>
+        </div>
+        <div class="insight-divider"></div>
+        <p style="font-size:12px">The $10M–$40M budget range achieves the best risk-adjusted returns. These mid-tier productions can attract name talent while keeping breakeven thresholds achievable.</p>
+        <span class="insight-tag tag-blue">Budget Optimization</span>
+        <span class="insight-tag tag-amber">ROI Analysis</span>
+      </div>
+
+      <!-- INSIGHT 5: Industry growth -->
+      <div class="insight-card">
+        <div class="insight-icon" style="background:rgba(52,211,153,0.15)">📈</div>
+        <h3>Industry Growth (1990–2017)</h3>
+        <p>Average revenue grew 156% while average budgets grew only 180%, with efficiency gains in recent years.</p>
+        <div class="insight-stat" style="color:var(--accent-green)">+156%</div>
+        <div class="insight-stat-label">Revenue growth from 1990 ($84.6M) to 2016 ($129.9M)</div>
+        <span class="insight-tag tag-teal">Growth Trend</span>
+        <span class="insight-tag tag-blue">Industry Health</span>
+      </div>
+
+      <!-- INSIGHT 6: User behavior -->
+      <div class="insight-card">
+        <div class="insight-icon" style="background:rgba(251,113,133,0.15)">👥</div>
+        <h3>User Rating Behavior</h3>
+        <p>Analysis of 100K+ user ratings reveals strong positive bias in movie scoring patterns.</p>
+        <div class="insight-divider"></div>
+        <ul class="insight-list">
+          <li>4.0/5.0 is the single most common rating (27,517 times)</li>
+          <li>3.0 follows as 2nd most common — users tend to be generous</li>
+          <li>Scores below 2.0 are relatively rare (&lt;5% of all ratings)</li>
+          <li>Average user rating: 3.5 / 5.0 across all movies</li>
+        </ul>
+      </div>
+
+      <!-- INSIGHT 7: Language -->
+      <div class="insight-card full">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px">
+          <div>
+            <div class="insight-icon" style="background:rgba(79,156,249,0.15)">🌍</div>
+            <h3>Franchise Power</h3>
+            <p style="font-size:13px;color:var(--text-secondary);line-height:1.6;margin-top:8px">Movies belonging to a collection/franchise earn on average <strong style="color:var(--accent-blue)">3.2×</strong> more revenue than standalone films. Sequels consistently outperform their predecessor budgets.</p>
+          </div>
+          <div>
+            <div class="insight-icon" style="background:rgba(45,212,191,0.15)">🎭</div>
+            <h3>Genre Overlap Premium</h3>
+            <p style="font-size:13px;color:var(--text-secondary);line-height:1.6;margin-top:8px">Movies spanning Action+Adventure+Sci-Fi generate the highest combined revenue. The top 1% of earners almost all combine 3+ popular genres, creating broad audience appeal.</p>
+          </div>
+          <div>
+            <div class="insight-icon" style="background:rgba(251,191,36,0.15)">🏆</div>
+            <h3>The 100M Club</h3>
+            <p style="font-size:13px;color:var(--text-secondary);line-height:1.6;margin-top:8px">Only <strong style="color:var(--accent-amber)">18%</strong> of movies with known budgets cross the $100M revenue threshold. Yet these films account for over <strong style="color:var(--accent-amber)">72%</strong> of total worldwide box office receipts in the dataset.</p>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /insights-grid -->
+
+    <!-- INSIGHTS CHARTS -->
+    <div class="row row-2r" style="margin-top:0">
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Top Keywords by Movie Count</div>
+            <div class="chart-subtitle">Most common thematic keywords across dataset</div>
+          </div>
+        </div>
+        <div class="chart-canvas-wrap" style="height:220px">
+          <canvas id="keywordsChart"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Genre Count Distribution</div>
+            <div class="chart-subtitle">Total movies per genre (full dataset)</div>
+          </div>
+        </div>
+        <div class="chart-canvas-wrap" style="height:220px">
+          <canvas id="genreCountChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /insights page -->
+
+  <div class="footer">
+    <span>Source: IMDB Dataset (45,000+ movies)</span>
+    <span>All values are aggregated and anonymized</span>
+    <span>Dataset coverage: 1916–2017</span>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════
+// DATA
+// ════════════════════════════════════
+const ALL_SCATTER = [{"title":"Toy Story","budget":30000,"revenue":373,"rating":7.7,"genres":["Animation","Comedy"],"year":1995},{"title":"Jumanji","budget":65000,"revenue":262,"rating":6.9,"genres":["Adventure","Fantasy"],"year":1995},{"title":"GoldenEye","budget":58000,"revenue":352,"rating":6.6,"genres":["Action","Adventure"],"year":1995},{"title":"Ace Ventura: When Nature Calls","budget":30000,"revenue":212,"rating":6.0,"genres":["Comedy"],"year":1995},{"title":"Four Rooms","budget":4000,"revenue":4,"rating":6.4,"genres":["Comedy","Thriller"],"year":1995},{"title":"Money Train","budget":60000,"revenue":34,"rating":5.4,"genres":["Action","Crime"],"year":1995},{"title":"Get Shorty","budget":30000,"revenue":115,"rating":6.7,"genres":["Action","Comedy"],"year":1995},{"title":"Copycat","budget":30000,"revenue":32,"rating":6.3,"genres":["Crime","Drama"],"year":1995},{"title":"Die Hard: With a Vengeance","budget":90000,"revenue":361,"rating":7.0,"genres":["Action","Thriller"],"year":1995},{"title":"Outbreak","budget":50000,"revenue":188,"rating":6.3,"genres":["Action","Drama"],"year":1995},{"title":"Mr. Holland's Opus","budget":31000,"revenue":107,"rating":6.9,"genres":["Drama","Music"],"year":1995},{"title":"The American President","budget":62000,"revenue":107,"rating":6.9,"genres":["Comedy","Drama"],"year":1995},{"title":"Braveheart","budget":72000,"revenue":210,"rating":7.9,"genres":["Action","Drama"],"year":1995},{"title":"Casino","budget":52000,"revenue":116,"rating":8.2,"genres":["Crime","Drama"],"year":1995},{"title":"Se7en","budget":33000,"revenue":327,"rating":8.6,"genres":["Crime","Thriller"],"year":1996},{"title":"Toy Story 2","budget":90000,"revenue":497,"rating":7.9,"genres":["Animation","Comedy"],"year":1999},{"title":"The Matrix","budget":63000,"revenue":463,"rating":8.1,"genres":["Action","Science Fiction"],"year":1999},{"title":"The Sixth Sense","budget":40000,"revenue":672,"rating":8.1,"genres":["Drama","Mystery"],"year":1999},{"title":"Star Wars: The Phantom Menace","budget":115000,"revenue":924,"rating":6.4,"genres":["Action","Adventure"],"year":1999},{"title":"The Lion King","budget":45000,"revenue":987,"rating":8.2,"genres":["Animation","Family"],"year":1994},{"title":"Forrest Gump","budget":55000,"revenue":678,"rating":8.5,"genres":["Comedy","Drama"],"year":1994},{"title":"Pulp Fiction","budget":8000,"revenue":214,"rating":8.9,"genres":["Crime","Thriller"],"year":1994},{"title":"Speed","budget":30000,"revenue":350,"rating":6.9,"genres":["Action","Thriller"],"year":1994},{"title":"True Lies","budget":100000,"revenue":378,"rating":6.9,"genres":["Action","Comedy"],"year":1994},{"title":"Titanic","budget":200000,"revenue":1843,"rating":7.5,"genres":["Drama","Romance"],"year":1997},{"title":"Men in Black","budget":90000,"revenue":589,"rating":7.2,"genres":["Action","Comedy"],"year":1997},{"title":"The Lost World: Jurassic Park","budget":73000,"revenue":618,"rating":5.9,"genres":["Action","Adventure"],"year":1997},{"title":"Air Force One","budget":85000,"revenue":315,"rating":6.3,"genres":["Action","Thriller"],"year":1997},{"title":"As Good as It Gets","budget":50000,"revenue":313,"rating":7.7,"genres":["Comedy","Drama"],"year":1997},{"title":"Gladiator","budget":103000,"revenue":460,"rating":8.1,"genres":["Action","Adventure"],"year":2000},{"title":"Mission: Impossible 2","budget":125000,"revenue":546,"rating":5.8,"genres":["Action","Adventure"],"year":2000},{"title":"Cast Away","budget":90000,"revenue":429,"rating":7.7,"genres":["Adventure","Drama"],"year":2000},{"title":"X-Men","budget":75000,"revenue":296,"rating":7.4,"genres":["Action","Adventure"],"year":2000},{"title":"The Perfect Storm","budget":120000,"revenue":328,"rating":6.4,"genres":["Action","Drama"],"year":2000},{"title":"Harry Potter and the Sorcerer's Stone","budget":125000,"revenue":974,"rating":7.4,"genres":["Adventure","Fantasy"],"year":2001},{"title":"The Lord of the Rings: The Fellowship of the Ring","budget":93000,"revenue":871,"rating":8.8,"genres":["Adventure","Fantasy"],"year":2001},{"title":"Rush Hour 2","budget":90000,"revenue":347,"rating":6.2,"genres":["Action","Comedy"],"year":2001},{"title":"Planet of the Apes","budget":100000,"revenue":362,"rating":5.7,"genres":["Action","Science Fiction"],"year":2001},{"title":"Shrek","budget":60000,"revenue":484,"rating":7.9,"genres":["Animation","Comedy"],"year":2001},{"title":"Spider-Man","budget":139000,"revenue":821,"rating":7.3,"genres":["Action","Adventure"],"year":2002},{"title":"The Lord of the Rings: The Two Towers","budget":94000,"revenue":926,"rating":8.7,"genres":["Action","Adventure"],"year":2002},{"title":"Harry Potter and the Chamber of Secrets","budget":100000,"revenue":878,"rating":7.4,"genres":["Adventure","Fantasy"],"year":2002},{"title":"Signs","budget":72000,"revenue":408,"rating":6.9,"genres":["Drama","Horror"],"year":2002},{"title":"Ice Age","budget":59000,"revenue":383,"rating":7.5,"genres":["Animation","Comedy"],"year":2002},{"title":"Finding Nemo","budget":94000,"revenue":940,"rating":8.2,"genres":["Animation","Family"],"year":2003},{"title":"Pirates of the Caribbean: The Curse of the Black Pearl","budget":140000,"revenue":654,"rating":8.0,"genres":["Action","Adventure"],"year":2003},{"title":"The Matrix Reloaded","budget":150000,"revenue":742,"rating":7.2,"genres":["Action","Science Fiction"],"year":2003},{"title":"The Lord of the Rings: The Return of the King","budget":94000,"revenue":1120,"rating":8.9,"genres":["Action","Adventure"],"year":2003},{"title":"Bruce Almighty","budget":81000,"revenue":484,"rating":6.7,"genres":["Comedy","Drama"],"year":2003},{"title":"Shrek 2","budget":150000,"revenue":919,"rating":7.3,"genres":["Animation","Comedy"],"year":2004},{"title":"Spider-Man 2","budget":200000,"revenue":789,"rating":7.5,"genres":["Action","Adventure"],"year":2004},{"title":"Harry Potter and the Prisoner of Azkaban","budget":130000,"revenue":796,"rating":7.9,"genres":["Adventure","Fantasy"],"year":2004},{"title":"The Incredibles","budget":92000,"revenue":631,"rating":8.0,"genres":["Action","Animation"],"year":2004},{"title":"National Treasure","budget":100000,"revenue":347,"rating":6.6,"genres":["Action","Adventure"],"year":2004},{"title":"War of the Worlds","budget":132000,"revenue":591,"rating":6.5,"genres":["Action","Science Fiction"],"year":2005},{"title":"Charlie and the Chocolate Factory","budget":150000,"revenue":474,"rating":6.7,"genres":["Adventure","Fantasy"],"year":2005},{"title":"Madagascar","budget":75000,"revenue":532,"rating":7.0,"genres":["Animation","Comedy"],"year":2005},{"title":"Batman Begins","budget":150000,"revenue":374,"rating":8.3,"genres":["Action","Adventure"],"year":2005},{"title":"Pirates of the Caribbean: Dead Man's Chest","budget":225000,"revenue":1066,"rating":7.3,"genres":["Action","Adventure"],"year":2006},{"title":"Cars","budget":120000,"revenue":461,"rating":7.2,"genres":["Animation","Comedy"],"year":2006},{"title":"Night at the Museum","budget":110000,"revenue":574,"rating":6.5,"genres":["Action","Comedy"],"year":2006},{"title":"The Da Vinci Code","budget":125000,"revenue":758,"rating":6.6,"genres":["Mystery","Thriller"],"year":2006},{"title":"Ice Age: The Meltdown","budget":80000,"revenue":660,"rating":7.0,"genres":["Animation","Comedy"],"year":2006},{"title":"Spider-Man 3","budget":258000,"revenue":890,"rating":6.2,"genres":["Action","Adventure"],"year":2007},{"title":"Shrek the Third","budget":160000,"revenue":798,"rating":6.3,"genres":["Animation","Comedy"],"year":2007},{"title":"Transformers","budget":150000,"revenue":709,"rating":7.0,"genres":["Action","Science Fiction"],"year":2007},{"title":"Pirates of the Caribbean: At World's End","budget":300000,"revenue":963,"rating":7.1,"genres":["Action","Adventure"],"year":2007},{"title":"Ratatouille","budget":150000,"revenue":620,"rating":8.0,"genres":["Animation","Comedy"],"year":2007},{"title":"The Dark Knight","budget":185000,"revenue":1001,"rating":9.0,"genres":["Action","Drama"],"year":2008},{"title":"Indiana Jones and the Kingdom of the Crystal Skull","budget":185000,"revenue":786,"rating":6.2,"genres":["Action","Adventure"],"year":2008},{"title":"WALL-E","budget":180000,"revenue":521,"rating":8.4,"genres":["Animation","Family"],"year":2008},{"title":"Kung Fu Panda","budget":130000,"revenue":631,"rating":7.6,"genres":["Action","Animation"],"year":2008},{"title":"Hancock","budget":150000,"revenue":624,"rating":6.4,"genres":["Action","Drama"],"year":2008},{"title":"Avatar","budget":237000,"revenue":2787,"rating":7.2,"genres":["Action","Adventure"],"year":2009},{"title":"Up","budget":175000,"revenue":735,"rating":8.3,"genres":["Animation","Comedy"],"year":2009},{"title":"Transformers: Revenge of the Fallen","budget":200000,"revenue":836,"rating":6.0,"genres":["Action","Science Fiction"],"year":2009},{"title":"The Twilight Saga: New Moon","budget":50000,"revenue":709,"rating":4.5,"genres":["Drama","Fantasy"],"year":2009},{"title":"Ice Age: Dawn of the Dinosaurs","budget":90000,"revenue":886,"rating":7.1,"genres":["Animation","Comedy"],"year":2009},{"title":"Toy Story 3","budget":200000,"revenue":1063,"rating":8.3,"genres":["Animation","Comedy"],"year":2010},{"title":"Alice in Wonderland","budget":200000,"revenue":1025,"rating":6.5,"genres":["Adventure","Fantasy"],"year":2010},{"title":"Inception","budget":160000,"revenue":836,"rating":8.8,"genres":["Action","Science Fiction"],"year":2010},{"title":"Harry Potter and the Deathly Hallows: Part 1","budget":125000,"revenue":976,"rating":7.8,"genres":["Adventure","Fantasy"],"year":2010},{"title":"Shrek Forever After","budget":165000,"revenue":752,"rating":6.2,"genres":["Animation","Comedy"],"year":2010},{"title":"Harry Potter and the Deathly Hallows: Part 2","budget":125000,"revenue":1341,"rating":8.1,"genres":["Adventure","Fantasy"],"year":2011},{"title":"Transformers: Dark of the Moon","budget":195000,"revenue":1123,"rating":6.3,"genres":["Action","Science Fiction"],"year":2011},{"title":"Pirates of the Caribbean: On Stranger Tides","budget":250000,"revenue":1045,"rating":6.4,"genres":["Action","Adventure"],"year":2011},{"title":"The Lion King 3D","budget":10000,"revenue":94,"rating":8.2,"genres":["Animation","Family"],"year":2011},{"title":"Fast Five","budget":125000,"revenue":626,"rating":7.3,"genres":["Action","Crime"],"year":2011},{"title":"The Avengers","budget":220000,"revenue":1519,"rating":7.8,"genres":["Action","Science Fiction"],"year":2012},{"title":"Ice Age: Continental Drift","budget":95000,"revenue":877,"rating":6.8,"genres":["Animation","Comedy"],"year":2012},{"title":"The Dark Knight Rises","budget":250000,"revenue":1085,"rating":8.5,"genres":["Action","Drama"],"year":2012},{"title":"The Amazing Spider-Man","budget":230000,"revenue":757,"rating":6.9,"genres":["Action","Adventure"],"year":2012},{"title":"Madagascar 3: Europe's Most Wanted","budget":145000,"revenue":746,"rating":7.2,"genres":["Animation","Comedy"],"year":2012},{"title":"Iron Man 3","budget":200000,"revenue":1215,"rating":7.2,"genres":["Action","Adventure"],"year":2013},{"title":"Despicable Me 2","budget":76000,"revenue":970,"rating":7.5,"genres":["Animation","Comedy"],"year":2013},{"title":"Frozen","budget":150000,"revenue":1274,"rating":7.5,"genres":["Animation","Family"],"year":2013},{"title":"Fast & Furious 6","budget":160000,"revenue":788,"rating":7.1,"genres":["Action","Crime"],"year":2013},{"title":"Monsters University","budget":200000,"revenue":744,"rating":7.3,"genres":["Animation","Comedy"],"year":2013},{"title":"Transformers: Age of Extinction","budget":210000,"revenue":1104,"rating":5.8,"genres":["Action","Science Fiction"],"year":2014},{"title":"The Amazing Spider-Man 2","budget":200000,"revenue":709,"rating":6.6,"genres":["Action","Adventure"],"year":2014},{"title":"Guardians of the Galaxy","budget":170000,"revenue":774,"rating":8.1,"genres":["Action","Science Fiction"],"year":2014},{"title":"Maleficent","budget":180000,"revenue":758,"rating":6.9,"genres":["Fantasy","Family"],"year":2014},{"title":"Interstellar","budget":165000,"revenue":675,"rating":8.6,"genres":["Adventure","Drama"],"year":2014},{"title":"Avengers: Age of Ultron","budget":250000,"revenue":1405,"rating":7.4,"genres":["Action","Science Fiction"],"year":2015},{"title":"Jurassic World","budget":150000,"revenue":1671,"rating":7.0,"genres":["Action","Adventure"],"year":2015},{"title":"Furious 7","budget":190000,"revenue":1516,"rating":7.2,"genres":["Action","Crime"],"year":2015},{"title":"Inside Out","budget":175000,"revenue":857,"rating":8.3,"genres":["Animation","Drama"],"year":2015},{"title":"Cinderella","budget":95000,"revenue":543,"rating":7.1,"genres":["Drama","Family"],"year":2015},{"title":"Captain America: Civil War","budget":250000,"revenue":1153,"rating":7.8,"genres":["Action","Science Fiction"],"year":2016},{"title":"Zootopia","budget":150000,"revenue":1023,"rating":8.0,"genres":["Animation","Comedy"],"year":2016},{"title":"The Jungle Book","budget":175000,"revenue":966,"rating":7.4,"genres":["Adventure","Family"],"year":2016},{"title":"Finding Dory","budget":200000,"revenue":1028,"rating":7.3,"genres":["Animation","Family"],"year":2016},{"title":"Batman v Superman","budget":250000,"revenue":873,"rating":6.5,"genres":["Action","Science Fiction"],"year":2016},{"title":"Rogue One: A Star Wars Story","budget":200000,"revenue":1056,"rating":7.8,"genres":["Action","Science Fiction"],"year":2016},{"title":"Doctor Strange","budget":165000,"revenue":677,"rating":7.5,"genres":["Action","Science Fiction"],"year":2016}];
+
+const YEAR_TREND = [{"year":1990,"count":62,"avg_rev":84.6,"avg_budget":22.2,"avg_rating":6.26},{"year":1991,"count":72,"avg_rev":65.1,"avg_budget":22.2,"avg_rating":6.18},{"year":1992,"count":70,"avg_rev":76.9,"avg_budget":21.7,"avg_rating":6.27},{"year":1993,"count":82,"avg_rev":76.1,"avg_budget":21.0,"avg_rating":6.16},{"year":1994,"count":74,"avg_rev":91.9,"avg_budget":27.2,"avg_rating":6.08},{"year":1995,"count":96,"avg_rev":79.8,"avg_budget":29.5,"avg_rating":6.29},{"year":1996,"count":98,"avg_rev":81.5,"avg_budget":31.9,"avg_rating":6.18},{"year":1997,"count":109,"avg_rev":102.4,"avg_budget":39.0,"avg_rating":6.25},{"year":1998,"count":109,"avg_rev":89.4,"avg_budget":38.4,"avg_rating":6.28},{"year":1999,"count":130,"avg_rev":91.1,"avg_budget":39.6,"avg_rating":6.23},{"year":2000,"count":128,"avg_rev":89.3,"avg_budget":39.0,"avg_rating":6.14},{"year":2001,"count":141,"avg_rev":98.9,"avg_budget":39.3,"avg_rating":6.17},{"year":2002,"count":153,"avg_rev":98.9,"avg_budget":37.7,"avg_rating":6.2},{"year":2003,"count":133,"avg_rev":115.7,"avg_budget":42.2,"avg_rating":6.15},{"year":2004,"count":168,"avg_rev":102.5,"avg_budget":41.0,"avg_rating":6.19},{"year":2005,"count":181,"avg_rev":90.5,"avg_budget":38.2,"avg_rating":6.14},{"year":2006,"count":205,"avg_rev":86.2,"avg_budget":36.5,"avg_rating":6.2},{"year":2007,"count":184,"avg_rev":100.6,"avg_budget":38.3,"avg_rating":6.24},{"year":2008,"count":202,"avg_rev":98.7,"avg_budget":38.3,"avg_rating":6.08},{"year":2009,"count":203,"avg_rev":110.6,"avg_budget":38.9,"avg_rating":6.22},{"year":2010,"count":219,"avg_rev":105.3,"avg_budget":38.8,"avg_rating":6.24},{"year":2011,"count":219,"avg_rev":109.3,"avg_budget":39.5,"avg_rating":6.14},{"year":2012,"count":191,"avg_rev":131.9,"avg_budget":41.1,"avg_rating":6.12},{"year":2013,"count":211,"avg_rev":121.9,"avg_budget":42.3,"avg_rating":6.35},{"year":2014,"count":200,"avg_rev":129.3,"avg_budget":39.1,"avg_rating":6.3},{"year":2015,"count":202,"avg_rev":138.4,"avg_budget":38.4,"avg_rating":6.35},{"year":2016,"count":228,"avg_rev":129.9,"avg_budget":41.5,"avg_rating":6.38},{"year":2017,"count":69,"avg_rev":216.2,"avg_budget":62.4,"avg_rating":6.39}];
+
+const GENRE_ROI = {Animation:2.77,Horror:2.55,Family:2.49,Adventure:2.31,Fantasy:2.2,Comedy:2.16,Romance:2.16,'Science Fiction':2.01,Action:2.04,War:2.04,Thriller:2.03,Crime:1.91,Drama:1.83,History:1.8,Mystery:1.8};
+const GENRE_RATINGS = {"Action":{"q1":5.1,"median":5.9,"q3":6.6,"min":3.5,"max":7.4},"Adventure":{"q1":5.2,"median":6.0,"q3":6.7,"min":3.7,"max":7.6},"Comedy":{"q1":5.3,"median":6.0,"q3":6.7,"min":4.0,"max":7.7},"Drama":{"q1":5.5,"median":6.3,"q3":6.9,"min":4.2,"max":7.8},"Thriller":{"q1":5.1,"median":5.9,"q3":6.5,"min":3.7,"max":7.4},"Horror":{"q1":4.6,"median":5.4,"q3":6.1,"min":3.1,"max":7.1},"Sci-Fi":{"q1":4.6,"median":5.6,"q3":6.4,"min":3.0,"max":7.4},"Animation":{"q1":5.8,"median":6.5,"q3":7.1,"min":4.8,"max":8.0},"Romance":{"q1":5.5,"median":6.1,"q3":6.8,"min":4.0,"max":7.7},"Crime":{"q1":5.5,"median":6.2,"q3":6.8,"min":4.2,"max":7.6}};
+const REV_MONTH = {1:46.1,2:71.9,3:91.4,4:87.9,5:139.9,6:159.8,7:120.7,8:60.5,9:47.7,10:67.8,11:126.5,12:118.4};
+const RATING_HIST = {0.5:948,1:3010,1.5:1491,2:6788,2.5:4001,3:19030,3.5:9788,4:27517,4.5:7340,5:14624};
+const KEYWORDS_TOP = {'independent film':1914,'murder':1285,'based on novel':822,'musical':726,'violence':647,'revenge':618,'biography':613,'suspense':581,'love':565,'police':451,'sequel':432,'friendship':404,'world war ii':390,'teenager':434,'sport':535};
+const GENRE_COUNTS = {'Drama':20244,'Comedy':13176,'Thriller':7619,'Romance':6730,'Action':6592,'Horror':4671,'Crime':4304,'Documentary':3930,'Adventure':3490,'Science Fiction':3044,'Family':2767,'Animation':1931};
+
+// ════════════════════════════════════
+// STATE
+// ════════════════════════════════════
+let state = {
+  yearMin: 1990, yearMax: 2017,
+  activeGenres: new Set(['Action','Adventure','Comedy','Drama','Thriller','Science Fiction','Horror','Animation','Romance','Crime','Family','Fantasy']),
+  minVotes: 500
+};
+
+// ════════════════════════════════════
+// CHARTS
+// ════════════════════════════════════
+let charts = {};
+const PALETTE = ['#4f9cf9','#2dd4bf','#a78bfa','#fbbf24','#fb7185','#34d399','#f97316','#e879f9','#60a5fa','#4ade80','#facc15','#f472b6'];
+
+Chart.defaults.color = '#8b949e';
+Chart.defaults.font.family = 'DM Sans';
+
+function mkGradient(ctx, color, alpha1, alpha2) {
+  const g = ctx.createLinearGradient(0, 0, 0, ctx.canvas.height);
+  g.addColorStop(0, color.replace(')', `,${alpha1})`).replace('rgb','rgba'));
+  g.addColorStop(1, color.replace(')', `,${alpha2})`).replace('rgb','rgba'));
+  return g;
+}
+
+function hexToRgb(hex) {
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  return `rgb(${r},${g},${b})`;
+}
+
+function colorAlpha(hex, a) {
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+function initCharts() {
+  initScatter();
+  initROI();
+  initMonth();
+  initBudgetROI();
+  initRatingGenre();
+  initYearTrend();
+  initRatingHist();
+  initKeywords();
+  initGenreCount();
+}
+
+function getFilteredScatter() {
+  return ALL_SCATTER.filter(d =>
+    d.year >= state.yearMin && d.year <= state.yearMax &&
+    d.genres.some(g => state.activeGenres.has(g))
+  );
+}
+
+// SCATTER
+function initScatter() {
+  const ctx = document.getElementById('scatterChart').getContext('2d');
+  const data = getFilteredScatter();
+  const pts = data.map(d => ({x: d.budget, y: d.revenue, title: d.title, rating: d.rating}));
+
+  // Compute trend line
+  const n = pts.length;
+  let sx=0,sy=0,sxy=0,sxx=0;
+  pts.forEach(p=>{sx+=p.x;sy+=p.y;sxy+=p.x*p.y;sxx+=p.x*p.x;});
+  const slope = (n*sxy - sx*sy)/(n*sxx - sx*sx);
+  const intercept = (sy - slope*sx)/n;
+  const minX = Math.min(...pts.map(p=>p.x));
+  const maxX = Math.max(...pts.map(p=>p.x));
+  const trendPts = [{x:minX,y:slope*minX+intercept},{x:maxX,y:slope*maxX+intercept}];
+
+  if (charts.scatter) charts.scatter.destroy();
+  charts.scatter = new Chart(ctx, {
+    type: 'scatter',
+    data: {
+      datasets: [
+        {
+          label: 'Movies',
+          data: pts,
+          backgroundColor: colorAlpha('#4f9cf9', 0.6),
+          borderColor: colorAlpha('#4f9cf9', 0.9),
+          borderWidth: 1,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+        },
+        {
+          label: 'Trend',
+          data: trendPts,
+          type: 'line',
+          backgroundColor: 'transparent',
+          borderColor: 'rgba(255,255,255,0.6)',
+          borderWidth: 2,
+          borderDash: [4,4],
+          pointRadius: 0,
+          tension: 0,
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => {
+              const d = ctx.raw;
+              if (d.title) return [`${d.title}`, `Budget: $${d.x.toLocaleString()}K`, `Revenue: $${d.y}M`, `Rating: ${d.rating}`];
+              return '';
+            }
+          }
+        }
+      },
+      scales: {
+        x: { title: { display: true, text: 'Budget (USD K)', color: '#8b949e', font:{size:11} }, grid: { color: 'rgba(255,255,255,0.04)' } },
+        y: { title: { display: true, text: 'Revenue (USD M)', color: '#8b949e', font:{size:11} }, grid: { color: 'rgba(255,255,255,0.04)' } }
+      }
+    }
+  });
+}
+
+// ROI
+function initROI() {
+  const ctx = document.getElementById('roiChart').getContext('2d');
+  const activeROI = Object.entries(GENRE_ROI)
+    .filter(([g]) => state.activeGenres.has(g) || g==='Science Fiction' || state.activeGenres.has('Science Fiction'))
+    .sort((a,b) => b[1]-a[1])
+    .slice(0,12);
+
+  const labels = activeROI.map(([g]) => g === 'Science Fiction' ? 'Sci-Fi' : g);
+  const vals = activeROI.map(([,v]) => v);
+  const colors = labels.map((_,i) => PALETTE[i % PALETTE.length]);
+
+  if (charts.roi) charts.roi.destroy();
+  charts.roi = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'ROI (×)',
+        data: vals,
+        backgroundColor: colors.map(c => colorAlpha(c, 0.7)),
+        borderColor: colors,
+        borderWidth: 1,
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { callback: v => v+'×' } }
+      }
+    }
+  });
+}
+
+// MONTH
+function initMonth() {
+  const ctx = document.getElementById('monthChart').getContext('2d');
+  const labels = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const vals = Object.values(REV_MONTH);
+
+  const grad = ctx.createLinearGradient(0, 0, 0, 180);
+  grad.addColorStop(0, colorAlpha('#2dd4bf', 0.4));
+  grad.addColorStop(1, colorAlpha('#2dd4bf', 0.0));
+
+  if (charts.month) charts.month.destroy();
+  charts.month = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Avg Revenue (M)',
+        data: vals,
+        borderColor: '#2dd4bf',
+        backgroundColor: grad,
+        fill: true,
+        tension: 0.4,
+        pointBackgroundColor: '#2dd4bf',
+        pointRadius: 4,
+        pointHoverRadius: 6,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false } },
+        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { callback: v => '$'+v+'M' } }
+      }
+    }
+  });
+}
+
+// BUDGET VS ROI
+function initBudgetROI() {
+  const ctx = document.getElementById('budgetRoiChart').getContext('2d');
+  const data = getFilteredScatter().map(d => ({
+    x: d.budget,
+    y: d.budget > 0 ? parseFloat((d.revenue / (d.budget/1000)).toFixed(1)) : 0,
+    title: d.title
+  })).filter(d => d.y > 0 && d.y < 50);
+
+  if (charts.budgetRoi) charts.budgetRoi.destroy();
+  charts.budgetRoi = new Chart(ctx, {
+    type: 'scatter',
+    data: {
+      datasets: [{
+        label: 'Budget vs ROI',
+        data,
+        backgroundColor: colorAlpha('#a78bfa', 0.5),
+        borderColor: colorAlpha('#a78bfa', 0.8),
+        borderWidth: 1,
+        pointRadius: 3,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { title: { display: true, text: 'Budget (USD K)', color: '#8b949e', font:{size:10} }, grid: { color: 'rgba(255,255,255,0.04)' } },
+        y: { title: { display: true, text: 'ROI (×)', color: '#8b949e', font:{size:10} }, grid: { color: 'rgba(255,255,255,0.04)' } }
+      }
+    }
+  });
+}
+
+// RATING BY GENRE
+function initRatingGenre() {
+  const ctx = document.getElementById('ratingGenreChart').getContext('2d');
+  const activeGenres = Object.keys(GENRE_RATINGS).filter(g => {
+    const key = g === 'Sci-Fi' ? 'Science Fiction' : g;
+    return state.activeGenres.has(key) || state.activeGenres.has(g);
+  });
+  const labels = activeGenres;
+  const medians = activeGenres.map(g => GENRE_RATINGS[g].median);
+  const q1s = activeGenres.map(g => GENRE_RATINGS[g].q1);
+  const q3s = activeGenres.map(g => GENRE_RATINGS[g].q3);
+
+  if (charts.ratingGenre) charts.ratingGenre.destroy();
+  charts.ratingGenre = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Q1',
+          data: q1s,
+          backgroundColor: colorAlpha('#4f9cf9', 0.3),
+          borderColor: 'transparent',
+          borderRadius: 3,
+          stack: 'rating',
+        },
+        {
+          label: 'Median',
+          data: medians.map((m,i) => m - q1s[i]),
+          backgroundColor: PALETTE.map(c => colorAlpha(c, 0.8)),
+          borderColor: PALETTE,
+          borderWidth: 1,
+          borderRadius: 3,
+          stack: 'rating',
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => {
+              const g = ctx.label;
+              const r = GENRE_RATINGS[g];
+              if (!r) return '';
+              return [`Median: ${r.median}`, `Q1–Q3: ${r.q1}–${r.q3}`];
+            }
+          }
+        }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 10 } }, stacked: true },
+        y: { grid: { color: 'rgba(255,255,255,0.04)' }, min: 0, max: 9, stacked: true }
+      }
+    }
+  });
+}
+
+// YEAR TREND
+function initYearTrend() {
+  const ctx = document.getElementById('yearTrendChart').getContext('2d');
+  const filtered = YEAR_TREND.filter(d => d.year >= state.yearMin && d.year <= state.yearMax);
+  const labels = filtered.map(d => d.year);
+
+  const gradRev = ctx.createLinearGradient(0, 0, 0, 190);
+  gradRev.addColorStop(0, colorAlpha('#4f9cf9', 0.3));
+  gradRev.addColorStop(1, colorAlpha('#4f9cf9', 0.0));
+
+  const gradBudget = ctx.createLinearGradient(0, 0, 0, 190);
+  gradBudget.addColorStop(0, colorAlpha('#a78bfa', 0.2));
+  gradBudget.addColorStop(1, colorAlpha('#a78bfa', 0.0));
+
+  if (charts.yearTrend) charts.yearTrend.destroy();
+  charts.yearTrend = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Avg Revenue',
+          data: filtered.map(d => d.avg_rev),
+          borderColor: '#4f9cf9',
+          backgroundColor: gradRev,
+          fill: true,
+          tension: 0.4,
+          pointRadius: 3,
+        },
+        {
+          label: 'Avg Budget',
+          data: filtered.map(d => d.avg_budget),
+          borderColor: '#a78bfa',
+          backgroundColor: gradBudget,
+          fill: true,
+          tension: 0.4,
+          pointRadius: 3,
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          labels: { color: '#8b949e', usePointStyle: true, pointStyleWidth: 8, font: { size: 11 } }
+        }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { maxTicksLimit: 8 } },
+        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { callback: v => '$'+v+'M' } }
+      }
+    }
+  });
+  document.getElementById('yearTrendRange').textContent = `${state.yearMin}–${state.yearMax}`;
+}
+
+// RATING HIST
+function initRatingHist() {
+  const ctx = document.getElementById('ratingHistChart').getContext('2d');
+  const labels = Object.keys(RATING_HIST);
+  const vals = Object.values(RATING_HIST);
+  const colors = labels.map(v => {
+    const n = parseFloat(v);
+    if (n <= 1.5) return colorAlpha('#fb7185', 0.7);
+    if (n <= 2.5) return colorAlpha('#fbbf24', 0.7);
+    if (n <= 3.5) return colorAlpha('#60a5fa', 0.7);
+    return colorAlpha('#34d399', 0.7);
+  });
+
+  if (charts.ratingHist) charts.ratingHist.destroy();
+  charts.ratingHist = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Count',
+        data: vals,
+        backgroundColor: colors,
+        borderWidth: 0,
+        borderRadius: 3,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false }, title: { display: true, text: 'Rating Score', color: '#8b949e', font:{size:10} } },
+        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { callback: v => (v/1000).toFixed(0)+'K' } }
+      }
+    }
+  });
+}
+
+// KEYWORDS
+function initKeywords() {
+  const ctx = document.getElementById('keywordsChart').getContext('2d');
+  const sorted = Object.entries(KEYWORDS_TOP).sort((a,b)=>b[1]-a[1]).slice(0,12);
+  const labels = sorted.map(([k])=>k);
+  const vals = sorted.map(([,v])=>v);
+
+  if (charts.keywords) charts.keywords.destroy();
+  charts.keywords = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Movie Count',
+        data: vals,
+        backgroundColor: PALETTE.map(c => colorAlpha(c, 0.7)),
+        borderColor: PALETTE,
+        borderWidth: 1,
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.04)' } },
+        y: { grid: { display: false }, ticks: { font: { size: 11 } } }
+      }
+    }
+  });
+}
+
+// GENRE COUNT
+function initGenreCount() {
+  const ctx = document.getElementById('genreCountChart').getContext('2d');
+  const sorted = Object.entries(GENRE_COUNTS).sort((a,b)=>b[1]-a[1]);
+  const labels = sorted.map(([k])=>k);
+  const vals = sorted.map(([,v])=>v);
+
+  if (charts.genreCount) charts.genreCount.destroy();
+  charts.genreCount = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [{
+        data: vals,
+        backgroundColor: PALETTE.map(c => colorAlpha(c, 0.75)),
+        borderColor: PALETTE,
+        borderWidth: 1,
+        hoverOffset: 8,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'right',
+          labels: { color: '#8b949e', font:{size:10}, usePointStyle: true, pointStyleWidth:8, boxWidth:10, padding:8 }
+        }
+      },
+      cutout: '60%',
+    }
+  });
+}
+
+// ════════════════════════════════════
+// FILTER LOGIC
+// ════════════════════════════════════
+function updateKPIs() {
+  const filtered = getFilteredScatter();
+  const n = filtered.length;
+  const totalRev = filtered.reduce((s,d) => s+d.revenue, 0);
+  const avgRev = n > 0 ? totalRev / n : 0;
+  const avgROI = n > 0 ? filtered.reduce((s,d) => s + d.revenue/(d.budget/1000), 0) / n : 0;
+  const avgRating = n > 0 ? filtered.reduce((s,d) => s+d.rating, 0) / n : 0;
+  const totalBudget = filtered.reduce((s,d) => s+d.budget/1000, 0);
+
+  document.getElementById('kpiMovies').textContent = n.toLocaleString();
+  document.getElementById('kpiRevenue').textContent = '$'+Math.round(avgRev)+'M';
+  document.getElementById('kpiROI').textContent = avgROI.toFixed(1)+'×';
+  document.getElementById('kpiRating').textContent = avgRating.toFixed(2);
+  document.getElementById('kpiBudget').textContent = totalBudget > 1000 ? '$'+(totalBudget/1000).toFixed(1)+'B' : '$'+Math.round(totalBudget)+'M';
+  document.getElementById('kpiTotalRev').textContent = totalRev > 1000 ? '$'+(totalRev/1000).toFixed(1)+'B' : '$'+Math.round(totalRev)+'M';
+  document.getElementById('yearBadge').innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>${state.yearMin} – ${state.yearMax}`;
+}
+
+function applyFilters() {
+  state.minVotes = parseInt(document.getElementById('minVotes').value);
+  updateKPIs();
+  initScatter();
+  initROI();
+  initBudgetROI();
+  initRatingGenre();
+  initYearTrend();
+}
+
+// YEAR RANGE SLIDER
+function setupSlider() {
+  const minSlider = document.getElementById('yearMin');
+  const maxSlider = document.getElementById('yearMax');
+  const fill = document.getElementById('rangeFill');
+
+  function update() {
+    let min = parseInt(minSlider.value);
+    let max = parseInt(maxSlider.value);
+    if (min > max - 1) { min = max - 1; minSlider.value = min; }
+    state.yearMin = min;
+    state.yearMax = max;
+    document.getElementById('lblYearMin').textContent = min;
+    document.getElementById('lblYearMax').textContent = max;
+    const pMin = (min - 1990) / (2017 - 1990) * 100;
+    const pMax = (max - 1990) / (2017 - 1990) * 100;
+    fill.style.left = pMin + '%';
+    fill.style.width = (pMax - pMin) + '%';
+    applyFilters();
+  }
+
+  minSlider.addEventListener('input', update);
+  maxSlider.addEventListener('input', update);
+  update();
+}
+
+function setQuick(years) {
+  document.querySelectorAll('.qbtn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  const maxY = 2017;
+  const minY = Math.max(1990, maxY - years + 1);
+  document.getElementById('yearMin').value = minY;
+  document.getElementById('yearMax').value = maxY;
+  state.yearMin = minY;
+  state.yearMax = maxY;
+  document.getElementById('lblYearMin').textContent = minY;
+  document.getElementById('lblYearMax').textContent = maxY;
+  const pMin = (minY - 1990) / (2017 - 1990) * 100;
+  const pMax = 100;
+  document.getElementById('rangeFill').style.left = pMin + '%';
+  document.getElementById('rangeFill').style.width = (pMax - pMin) + '%';
+  applyFilters();
+}
+
+// GENRE CHIPS
+function setupGenreChips() {
+  document.querySelectorAll('.chip[data-genre]').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const g = chip.dataset.genre;
+      if (state.activeGenres.has(g)) {
+        if (state.activeGenres.size > 1) {
+          state.activeGenres.delete(g);
+          chip.classList.remove('active');
+        }
+      } else {
+        state.activeGenres.add(g);
+        chip.classList.add('active');
+      }
+      applyFilters();
+    });
+  });
+}
+
+function resetAll() {
+  state.yearMin = 1990; state.yearMax = 2017;
+  document.getElementById('yearMin').value = 1990;
+  document.getElementById('yearMax').value = 2017;
+  document.getElementById('lblYearMin').textContent = '1990';
+  document.getElementById('lblYearMax').textContent = '2017';
+  document.getElementById('rangeFill').style.left = '0%';
+  document.getElementById('rangeFill').style.width = '100%';
+  state.activeGenres = new Set(['Action','Adventure','Comedy','Drama','Thriller','Science Fiction','Horror','Animation','Romance','Crime','Family','Fantasy']);
+  document.querySelectorAll('.chip[data-genre]').forEach(c => c.classList.add('active'));
+  document.getElementById('minVotes').value = '500';
+  state.minVotes = 500;
+  document.querySelectorAll('.qbtn').forEach((b,i) => b.classList.toggle('active', i===3));
+  applyFilters();
+}
+
+// PAGE SWITCHING
+function switchPage(page, el) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+}
+
+// ════════════════════════════════════
+// INIT
+// ════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  setupSlider();
+  setupGenreChips();
+  initCharts();
+  updateKPIs();
+});
+</script>
+</body>
+</html>
