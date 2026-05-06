@@ -1,49 +1,20 @@
 from __future__ import annotations
 
-import subprocess
-import sys
-from datetime import datetime
-from pathlib import Path
-
-import numpy as np
-import pandas as pd
-import plotly.express as px
-import plotly.graph_objects as go
 import streamlit as st
 
-
-ROOT = Path(__file__).resolve().parent
-DATA_FILE = ROOT / "data" / "processed_movies.csv"
-
-BG = "#07111f"
-PANEL = "#0f1c2d"
-CARD = "#122033"
-BORDER = "rgba(128, 164, 218, 0.18)"
-TEXT = "#f2f6ff"
-MUTED = "#9aa9bd"
-BLUE = "#3b82f6"
-TEAL = "#2dd4bf"
-PURPLE = "#a855f7"
-AMBER = "#fbbf24"
-ROSE = "#fb7185"
-GREEN = "#86efac"
-
-MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-CORE_GENRES = [
-    "Action",
-    "Adventure",
-    "Comedy",
-    "Drama",
-    "Thriller",
-    "Science Fiction",
-    "Horror",
-    "Romance",
-    "Crime",
-    "Fantasy",
-    "Animation",
-    "Family",
-    "Mystery",
-]
+from app.charts import genre_roi_chart, rating_box_chart, revenue_month_chart, scatter_with_trend
+from app.config import BLUE
+from app.components import (
+    render_chart_panel,
+    render_export,
+    render_footer,
+    render_header,
+    render_kpi_grid,
+    render_sidebar,
+)
+from app.data import apply_filters, available_genres, load_data, previous_period
+from app.metrics import compute_kpis
+from app.styles import inject_css
 
 
 st.set_page_config(
@@ -54,901 +25,136 @@ st.set_page_config(
 )
 
 
-def inject_css() -> None:
-    st.markdown(
-        f"""
-        <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+def render_dashboard_view(view: str, filtered, metric_choice: str, top_n: int, corr: float, roi_corr: float, roi_cap) -> None:
+    if view == "Export":
+        render_export(filtered)
+        return
 
-        :root {{
-            --bg: {BG};
-            --panel: {PANEL};
-            --card: {CARD};
-            --border: {BORDER};
-            --text: {TEXT};
-            --muted: {MUTED};
-            --blue: {BLUE};
-            --teal: {TEAL};
-            --purple: {PURPLE};
-            --amber: {AMBER};
-            --rose: {ROSE};
-        }}
-
-        html, body, [data-testid="stAppViewContainer"] {{
-            background: radial-gradient(circle at top left, rgba(59,130,246,.16), transparent 28%),
-                        linear-gradient(135deg, #07111f 0%, #081423 45%, #050b14 100%);
-            color: var(--text);
-            font-family: Inter, sans-serif;
-        }}
-
-        [data-testid="stHeader"] {{ background: transparent; }}
-        [data-testid="stToolbar"] {{ display: none; }}
-        [data-testid="stDecoration"] {{ display: none; }}
-        .block-container {{
-            width: calc(100vw - 96px);
-            max-width: 1760px;
-            min-width: 1120px;
-            padding: .85rem .95rem .75rem .95rem;
-        }}
-
-        section[data-testid="stSidebar"] {{
-            background: linear-gradient(180deg, #0b1728 0%, #07111f 100%);
-            border-right: 1px solid var(--border);
-            width: 90px !important;
-            min-width: 90px !important;
-        }}
-        section[data-testid="stSidebar"] [data-testid="stSidebarUserContent"] {{
-            padding: .8rem .42rem;
-        }}
-        .nav-logo {{
-            width: 40px; height: 40px; margin: .25rem auto .8rem auto;
-            border-radius: 12px; display: grid; place-items: center;
-            background: rgba(59,130,246,.15);
-            border: 1px solid rgba(59,130,246,.45);
-            box-shadow: 0 0 26px rgba(59,130,246,.22);
-            color: #8fd3ff; font-weight: 800; font-size: 12px;
-        }}
-        section[data-testid="stSidebar"] .stButton > button {{
-            height: 54px; padding: .15rem .2rem; margin: .12rem auto;
-            border-radius: 11px; border: 1px solid transparent;
-            background: transparent; color: #b8c4d8; font-size: 10px;
-            line-height: 1.1; white-space: nowrap;
-            word-break: normal; overflow-wrap: normal;
-            display: flex; justify-content: center;
-        }}
-        section[data-testid="stSidebar"] .stButton > button:hover {{
-            background: rgba(59,130,246,.15); color: #8fd3ff;
-            border: 1px solid rgba(59,130,246,.28);
-        }}
-        .active-nav {{
-            height: 54px; margin: .12rem auto; border-radius: 11px;
-            display: grid; place-items: center; text-align: center;
-            color: #8fd3ff; font-size: 10px; line-height: 1.15;
-            white-space: nowrap; word-break: normal; overflow-wrap: normal;
-            background: rgba(59,130,246,.15);
-            border: 1px solid rgba(59,130,246,.28);
-        }}
-
-        .topbar {{
-            display: flex; justify-content: space-between; align-items: flex-start;
-            gap: 1rem; margin-bottom: 1rem;
-        }}
-        .title h1 {{
-            margin: 0; font-size: 28px; line-height: 1.05; letter-spacing: -.02em; color: #f7fbff;
-        }}
-        .title p {{ margin: .32rem 0 0 0; color: var(--muted); font-size: 13px; }}
-        .top-controls {{ display: flex; gap: .75rem; align-items: center; }}
-        .pill {{
-            display: inline-flex; align-items: center; gap: .55rem;
-            min-height: 44px; padding: 0 1rem; border-radius: 10px;
-            background: rgba(18,32,51,.86); border: 1px solid var(--border);
-            color: #e9f2ff; box-shadow: inset 0 0 24px rgba(255,255,255,.015);
-            white-space: nowrap;
-        }}
-
-        .kpi-grid {{
-            display: grid; grid-template-columns: repeat(6, minmax(150px, 1fr));
-            gap: .75rem; margin: .75rem 0 .85rem;
-        }}
-        .kpi-card {{
-            min-height: 100px; padding: .82rem .82rem .68rem;
-            background: linear-gradient(145deg, rgba(18,32,51,.98), rgba(13,26,43,.98));
-            border: 1px solid var(--border); border-radius: 10px; position: relative; overflow: hidden;
-            box-shadow: 0 16px 35px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.04);
-        }}
-        .kpi-card::before {{
-            content: ""; position: absolute; inset: 0 auto 0 0; width: 2px; background: var(--accent);
-            box-shadow: 0 0 22px var(--accent);
-        }}
-        .kpi-label {{ color: #dbe7f8; font-weight: 700; font-size: 11px; }}
-        .kpi-value {{ font-size: 23px; font-weight: 800; margin-top: .34rem; color: #fff; letter-spacing: -.02em; }}
-        .kpi-foot {{ display: flex; justify-content: space-between; align-items: end; gap: .42rem; margin-top: .18rem; }}
-        .kpi-change.pos {{ color: var(--teal); }}
-        .kpi-change.neg {{ color: var(--rose); }}
-        .kpi-change.neu {{ color: var(--amber); }}
-        .sparkline {{ width: 78px; height: 30px; opacity: .95; }}
-
-        .panel {{
-            background: linear-gradient(145deg, rgba(18,32,51,.98), rgba(11,24,40,.98));
-            border: 1px solid var(--border); border-radius: 10px;
-            box-shadow: 0 16px 35px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.035);
-            padding: 1rem;
-        }}
-        .panel-title {{
-            color: #f7fbff; font-size: 15px; font-weight: 800; margin: 0 0 .45rem 0;
-        }}
-        .filter-note, .insight {{
-            color: #c8d4e6; font-size: 12px; line-height: 1.45;
-            background: rgba(255,255,255,.035); border-top: 1px solid rgba(255,255,255,.06);
-            padding: .62rem .72rem; border-radius: 8px; margin-top: .55rem;
-        }}
-        .small-stat {{
-            display: flex; justify-content: space-between; color: #dbe7f8;
-            border-top: 1px solid rgba(255,255,255,.06); padding-top: .75rem; margin-top: .75rem;
-        }}
-        .good {{ color: var(--teal); }}
-        .bad {{ color: var(--rose); }}
-
-        div[data-testid="stMetric"] {{
-            background: var(--card); border: 1px solid var(--border); padding: .8rem;
-            border-radius: 10px;
-        }}
-        div[data-testid="stPlotlyChart"] {{
-            border-radius: 10px; overflow: hidden;
-        }}
-        div[data-testid="stVerticalBlockBorderWrapper"] {{
-            background: linear-gradient(145deg, rgba(18,32,51,.96), rgba(11,24,40,.96));
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            box-shadow: 0 16px 35px rgba(0,0,0,.20), inset 0 1px 0 rgba(255,255,255,.035);
-        }}
-        div[data-testid="stVerticalBlockBorderWrapper"] > div {{
-            padding: .72rem .82rem;
-        }}
-        .stSlider, .stMultiSelect, .stNumberInput, .stRadio, .stSelectbox {{
-            color: var(--text);
-        }}
-        label, [data-testid="stWidgetLabel"] {{ color: #dbe7f8 !important; font-weight: 600; }}
-        .st-emotion-cache-1v0mbdj, .st-emotion-cache-1kyxreq {{ justify-content: center; }}
-        div[data-baseweb="select"] > div,
-        div[data-baseweb="input"] > div {{
-            background: rgba(255,255,255,.08);
-            border-color: rgba(255,255,255,.12);
-        }}
-        div[data-baseweb="tag"] {{
-            max-width: 96px;
-        }}
-        div[data-testid="stMultiSelect"] div[data-baseweb="select"] {{
-            max-height: 112px;
-            overflow-y: auto;
-        }}
-        div[data-testid="stRadio"] label {{
-            margin-right: .3rem;
-        }}
-
-        .footer {{
-            display: flex; justify-content: space-between; gap: 1rem; align-items: center;
-            margin-top: .8rem; padding: .8rem 1rem; color: var(--muted); font-size: 12px;
-            background: rgba(18,32,51,.78); border: 1px solid var(--border); border-radius: 10px;
-        }}
-
-        @media (max-width: 1200px) {{
-            .kpi-grid {{ grid-template-columns: repeat(3, minmax(0, 1fr)); }}
-            .title h1 {{ font-size: 26px; }}
-            .topbar {{ flex-direction: column; }}
-            .block-container {{ min-width: auto; width: calc(100vw - 96px); }}
-        }}
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
-
-
-def svg_icon(kind: str) -> str:
-    icons = {
-        "home": '<svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-6h5v6"/></svg>',
-        "grid": '<svg viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6"/><rect x="14" y="4" width="6" height="6"/><rect x="4" y="14" width="6" height="6"/><rect x="14" y="14" width="6" height="6"/></svg>',
-        "star": '<svg viewBox="0 0 24 24"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9L12 3Z"/></svg>',
-        "clock": '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 7v5l3.5 2"/></svg>',
-        "gear": '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.4-2.4 1a8 8 0 0 0-1.7-1L14.5 3h-5l-.3 3.1a8 8 0 0 0-1.7 1l-2.4-1-2 3.4 2 1.5a7 7 0 0 0 0 2l-2 1.5 2 3.4 2.4-1a8 8 0 0 0 1.7 1l.3 3.1h5l.3-3.1a8 8 0 0 0 1.7-1l2.4 1 2-3.4-2-1.5c.1-.3.1-.7.1-1Z"/></svg>',
-        "export": '<svg viewBox="0 0 24 24"><path d="M14 4h6v6"/><path d="m20 4-9 9"/><path d="M20 14v5H5V4h5"/></svg>',
-    }
-    return icons[kind]
-
-
-def set_view_mode(mode: str) -> None:
-    st.session_state["view_mode"] = mode
-
-
-def render_sidebar() -> str:
-    if "view_mode" not in st.session_state:
-        st.session_state["view_mode"] = "Overview"
-
-    items = [
-        ("Overview", "Home"),
-        ("Revenue", "Rev"),
-        ("Genres", "Genre"),
-        ("Time", "Time"),
-        ("Export", "Export"),
-    ]
-    with st.sidebar:
-        st.markdown('<div class="nav-logo">IM</div>', unsafe_allow_html=True)
-        for mode, label in items:
-            if st.session_state["view_mode"] == mode:
-                st.markdown(f'<div class="active-nav">{label}</div>', unsafe_allow_html=True)
-            else:
-                st.button(
-                    label,
-                    key=f"nav_{mode}",
-                    on_click=set_view_mode,
-                    args=(mode,),
-                    width="stretch",
-                )
-    return st.session_state["view_mode"]
-
-
-@st.cache_data(show_spinner=False)
-def load_data() -> pd.DataFrame:
-    if not DATA_FILE.exists():
-        subprocess.run(
-            [sys.executable, str(ROOT / "scripts" / "build_dataset.py")],
-            check=True,
-            cwd=ROOT,
-        )
-    df = pd.read_csv(DATA_FILE)
-    numeric_cols = [
-        "budget",
-        "revenue",
-        "year",
-        "release_month",
-        "runtime",
-        "popularity",
-        "tmdb_vote_count",
-        "rating_count",
-        "analysis_vote_count",
-        "avg_rating",
-        "roi",
-    ]
-    for column in numeric_cols:
-        df[column] = pd.to_numeric(df[column], errors="coerce")
-    df["genres"] = df["genres"].fillna("")
-    df["primary_genre"] = df["primary_genre"].fillna("Unknown")
-    return df
-
-
-def money(value: float) -> str:
-    if pd.isna(value):
-        return "0"
-    if abs(value) >= 1_000_000_000:
-        return f"${value / 1_000_000_000:.1f}B"
-    if abs(value) >= 1_000_000:
-        return f"${value / 1_000_000:.1f}M"
-    if abs(value) >= 1_000:
-        return f"${value / 1_000:.1f}K"
-    return f"${value:.0f}"
-
-
-def compact_number(value: float) -> str:
-    if pd.isna(value):
-        return "0"
-    if value >= 1_000_000:
-        return f"{value / 1_000_000:.1f}M"
-    if value >= 1_000:
-        return f"{value / 1_000:.1f}K"
-    return f"{value:,.0f}"
-
-
-def metric_delta(current: float, previous: float, suffix: str = "%") -> tuple[str, str]:
-    if previous == 0 or pd.isna(previous) or pd.isna(current):
-        return "0.0%", "neu"
-    delta = ((current - previous) / abs(previous)) * 100
-    return f"{delta:+.1f}{suffix}", "pos" if delta >= 0 else "neg"
-
-
-def sparkline_svg(values: list[float], color: str) -> str:
-    clean = [float(v) for v in values if not pd.isna(v)]
-    if len(clean) < 2:
-        clean = [0, 0]
-    min_value = min(clean)
-    max_value = max(clean)
-    spread = max(max_value - min_value, 1)
-    points = []
-    for index, value in enumerate(clean[-12:]):
-        x = 4 + index * (86 / max(len(clean[-12:]) - 1, 1))
-        y = 30 - ((value - min_value) / spread) * 24
-        points.append(f"{x:.1f},{y:.1f}")
-    return (
-        f'<svg class="sparkline" viewBox="0 0 96 36">'
-        f'<polyline points="{" ".join(points)}" fill="none" stroke="{color}" stroke-width="2.2" '
-        f'stroke-linecap="round" stroke-linejoin="round"/>'
-        f'<path d="M4 32 L{" L".join(points)} L92 34 L4 34Z" fill="{color}" opacity=".13"/></svg>'
-    )
-
-
-def kpi_card(label: str, value: str, change: str, tone: str, accent: str, series: list[float]) -> str:
-    return f"""
-    <div class="kpi-card" style="--accent:{accent}">
-      <div class="kpi-label">{label}</div>
-      <div class="kpi-value">{value}</div>
-      <div class="kpi-foot">
-        <div class="kpi-change {tone}">{change}</div>
-        {sparkline_svg(series, accent)}
-      </div>
-    </div>
-    """
-
-
-def render_kpi_grid(kpis: list[dict]) -> None:
-    st.html(
-        '<div class="kpi-grid">'
-        + "".join(
-            kpi_card(
-                item["label"],
-                item["display"],
-                item["change"],
-                item["tone"],
-                item["accent"],
-                item["series"],
+    if view == "Revenue":
+        left, right = st.columns([0.60, 0.40], gap="medium")
+        with left:
+            render_chart_panel(
+                "Box Office Success Analysis",
+                scatter_with_trend(filtered, "budget", "revenue", BLUE, 300),
+                f"Correlation: {corr:.2f} · Higher budgets generally show better box office success.",
             )
-            for item in kpis
+        with right:
+            render_chart_panel(
+                "Revenue by Release Month",
+                revenue_month_chart(filtered),
+                "Summer and winter holiday months often show visible revenue peaks.",
+            )
+        render_chart_panel(
+            "Budget vs ROI",
+            scatter_with_trend(filtered, "budget", "roi", "#a3e635", 245, y_cap=roi_cap),
+            f"Correlation: {roi_corr:.2f} · ROI outliers are capped visually at the 98th percentile.",
         )
-        + "</div>"
-    )
+        return
 
+    if view == "Genres":
+        left, right = st.columns([0.48, 0.52], gap="medium")
+        with left:
+            render_chart_panel(
+                "Genre Profitability (ROI)",
+                genre_roi_chart(filtered, metric_choice, top_n),
+                "Genre groups can be compared by ROI or average revenue after filtering.",
+            )
+        with right:
+            render_chart_panel(
+                "Rating Distribution by Genre",
+                rating_box_chart(filtered),
+                "Ratings are aggregated from user ratings and converted to a 10-point scale.",
+            )
+        return
 
-def explode_genres(df: pd.DataFrame) -> pd.DataFrame:
-    genre_df = df.copy()
-    genre_df["genre"] = genre_df["genres"].str.split("|")
-    genre_df = genre_df.explode("genre")
-    genre_df["genre"] = genre_df["genre"].replace("", np.nan)
-    return genre_df.dropna(subset=["genre"])
-
-
-def apply_filters(df: pd.DataFrame, year_range, selected_genres, min_votes: int) -> pd.DataFrame:
-    filtered = df[
-        (df["year"] >= year_range[0])
-        & (df["year"] <= year_range[1])
-        & (df["analysis_vote_count"].fillna(0) >= min_votes)
-    ].copy()
-    if selected_genres:
-        selected = set(selected_genres)
-        genre_mask = filtered["genres"].apply(
-                lambda value: bool(selected.intersection(str(value).split("|")))
-            ).astype(bool)
-        filtered = filtered[genre_mask]
-    return filtered
-
-
-def previous_period(df: pd.DataFrame, year_range, selected_genres, min_votes: int) -> pd.DataFrame:
-    span = year_range[1] - year_range[0] + 1
-    prev_range = (year_range[0] - span, year_range[0] - 1)
-    return apply_filters(df, prev_range, selected_genres, min_votes)
-
-
-def chart_layout(height: int = 300) -> dict:
-    return {
-        "height": height,
-        "paper_bgcolor": "rgba(0,0,0,0)",
-        "plot_bgcolor": "rgba(0,0,0,0)",
-        "font": {"color": "#dbe7f8", "family": "Inter"},
-        "margin": {"l": 52, "r": 24, "t": 16, "b": 46},
-        "xaxis": {
-            "gridcolor": "rgba(154,169,189,.18)",
-            "zerolinecolor": "rgba(154,169,189,.16)",
-            "linecolor": "rgba(154,169,189,.35)",
-        },
-        "yaxis": {
-            "gridcolor": "rgba(154,169,189,.18)",
-            "zerolinecolor": "rgba(154,169,189,.16)",
-            "linecolor": "rgba(154,169,189,.35)",
-        },
-        "legend": {"orientation": "h", "y": 1.12, "x": 0},
-    }
-
-
-def empty_chart(message: str, height: int = 300) -> go.Figure:
-    fig = go.Figure()
-    fig.add_annotation(
-        text=message,
-        showarrow=False,
-        font={"color": MUTED, "size": 15},
-        x=0.5,
-        y=0.5,
-        xref="paper",
-        yref="paper",
-    )
-    fig.update_layout(**chart_layout(height))
-    fig.update_xaxes(visible=False)
-    fig.update_yaxes(visible=False)
-    return fig
-
-
-def scatter_with_trend(df: pd.DataFrame, x: str, y: str, color: str, height: int, y_cap=None) -> go.Figure:
-    clean = df[[x, y, "title", "primary_genre"]].dropna()
-    clean = clean[(clean[x] > 0) & (clean[y] > 0)]
-    if y_cap is not None and not clean.empty:
-        clean = clean[clean[y] <= y_cap]
-    if len(clean) < 3:
-        return empty_chart("当前筛选条件下数据不足", height)
-
-    fig = px.scatter(
-        clean,
-        x=x,
-        y=y,
-        hover_name="title",
-        hover_data={"primary_genre": True, x: ":,.0f", y: ":,.2f"},
-        color_discrete_sequence=[color],
-        trendline="ols",
-    )
-    fig.update_traces(marker={"size": 7, "opacity": 0.72, "line": {"width": 0}})
-    for trace in fig.data:
-        if trace.mode == "lines":
-            trace.line.color = "#dceaff"
-            trace.line.width = 2
-    fig.update_layout(**chart_layout(height))
-    return fig
-
-
-def genre_roi_chart(df: pd.DataFrame, metric: str, top_n: int) -> go.Figure:
-    genre_df = explode_genres(df)
-    if genre_df.empty:
-        return empty_chart("当前筛选条件下没有类型数据", 300)
-
-    if metric == "ROI":
-        valid = genre_df.dropna(subset=["roi"])
-        grouped = valid.groupby("genre", as_index=False)["roi"].median()
-        y_col = "roi"
-        y_title = "ROI (x)"
-    else:
-        valid = genre_df[genre_df["revenue"] > 0]
-        grouped = valid.groupby("genre", as_index=False)["revenue"].mean()
-        y_col = "revenue"
-        y_title = "Avg Revenue"
-
-    grouped = grouped.sort_values(y_col, ascending=False).head(top_n)
-    if grouped.empty:
-        return empty_chart("当前筛选条件下没有可展示的收益数据", 300)
-
-    fig = px.bar(
-        grouped,
-        x="genre",
-        y=y_col,
-        color=y_col,
-        color_continuous_scale=[BLUE, PURPLE],
-        text=grouped[y_col].map(lambda value: f"{value:.1f}x" if metric == "ROI" else money(value)),
-    )
-    fig.update_traces(textposition="outside", marker_line_width=0)
-    fig.update_layout(**chart_layout(300), coloraxis_showscale=False)
-    fig.update_xaxes(title="Genres", tickangle=-40)
-    fig.update_yaxes(title=y_title)
-    return fig
-
-
-def revenue_month_chart(df: pd.DataFrame) -> go.Figure:
-    valid = df[(df["revenue"] > 0) & df["release_month"].notna()]
-    if valid.empty:
-        return empty_chart("当前筛选条件下没有月份收入数据", 242)
-    grouped = valid.groupby("release_month", as_index=False)["revenue"].mean()
-    grouped["month"] = grouped["release_month"].map(lambda month: MONTHS[int(month) - 1])
-    fig = go.Figure()
-    fig.add_trace(
-        go.Scatter(
-            x=grouped["month"],
-            y=grouped["revenue"],
-            mode="lines+markers",
-            line={"color": TEAL, "width": 3},
-            marker={"size": 7, "color": "#6ee7b7"},
-            fill="tozeroy",
-            fillcolor="rgba(45,212,191,.18)",
-            hovertemplate="%{x}<br>Avg revenue: $%{y:,.0f}<extra></extra>",
+    if view == "Time":
+        render_chart_panel(
+            "Revenue by Release Month",
+            revenue_month_chart(filtered),
+            "Use Year Range and Quick Range to inspect release timing patterns.",
         )
-    )
-    fig.update_layout(**chart_layout(242))
-    fig.update_yaxes(title="Revenue (USD)")
-    fig.update_xaxes(title="Month")
-    return fig
+        return
 
-
-def rating_box_chart(df: pd.DataFrame) -> go.Figure:
-    genre_df = explode_genres(df.dropna(subset=["avg_rating"]))
-    genre_df = genre_df[genre_df["genre"].isin(CORE_GENRES)]
-    if genre_df.empty:
-        return empty_chart("当前筛选条件下没有评分分布数据", 242)
-    order = (
-        genre_df.groupby("genre")["avg_rating"]
-        .median()
-        .sort_values(ascending=False)
-        .head(11)
-        .index.tolist()
-    )
-    genre_df = genre_df[genre_df["genre"].isin(order)]
-    fig = px.box(
-        genre_df,
-        x="genre",
-        y="avg_rating",
-        color="genre",
-        category_orders={"genre": order},
-        color_discrete_sequence=[BLUE, PURPLE, TEAL, AMBER, ROSE],
-        points="outliers",
-    )
-    fig.update_layout(**chart_layout(245), showlegend=False)
-    fig.update_yaxes(title="Rating", range=[0, 10])
-    fig.update_xaxes(title="Genre", tickangle=-40)
-    return fig
-
-
-def render_chart_panel(title: str, fig: go.Figure, insight: str) -> None:
-    with st.container(border=True):
-        st.markdown(f'<div class="panel-title">{title}</div>', unsafe_allow_html=True)
-        st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
-        st.markdown(f'<div class="insight">{insight}</div>', unsafe_allow_html=True)
-
-
-def current_filtered_csv(filtered: pd.DataFrame) -> bytes:
-    return filtered.to_csv(index=False).encode("utf-8-sig")
-
-
-def compute_kpis(filtered: pd.DataFrame, previous: pd.DataFrame) -> list[dict]:
-    valid_revenue = filtered[filtered["revenue"] > 0]
-    valid_budget = filtered[filtered["budget"] > 0]
-    valid_roi = filtered.dropna(subset=["roi"])
-    valid_rating = filtered.dropna(subset=["avg_rating"])
-    prev_revenue = previous[previous["revenue"] > 0]
-    prev_roi = previous.dropna(subset=["roi"])
-    prev_rating = previous.dropna(subset=["avg_rating"])
-
-    by_year = filtered.groupby("year", as_index=False).agg(
-        movies=("movie_id", "count"),
-        revenue=("revenue", lambda values: values[values > 0].mean()),
-        roi=("roi", "median"),
-        rating=("avg_rating", "mean"),
-        budget=("budget", lambda values: values[values > 0].sum()),
-    )
-
-    values = [
-        (
-            "Total Movies",
-            compact_number(len(filtered)),
-            len(filtered),
-            len(previous),
-            BLUE,
-            by_year["movies"].tolist(),
-        ),
-        (
-            "Avg Revenue",
-            money(valid_revenue["revenue"].mean()),
-            valid_revenue["revenue"].mean(),
-            prev_revenue["revenue"].mean(),
-            TEAL,
-            by_year["revenue"].tolist(),
-        ),
-        (
-            "Avg ROI",
-            f"{valid_roi['roi'].median():.1f}x" if not valid_roi.empty else "0.0x",
-            valid_roi["roi"].median() if not valid_roi.empty else 0,
-            prev_roi["roi"].median() if not prev_roi.empty else 0,
-            PURPLE,
-            by_year["roi"].tolist(),
-        ),
-        (
-            "Avg Rating",
-            f"{valid_rating['avg_rating'].mean():.1f}" if not valid_rating.empty else "0.0",
-            valid_rating["avg_rating"].mean() if not valid_rating.empty else 0,
-            prev_rating["avg_rating"].mean() if not prev_rating.empty else 0,
-            AMBER,
-            by_year["rating"].tolist(),
-        ),
-        (
-            "Total Budget",
-            money(valid_budget["budget"].sum()),
-            valid_budget["budget"].sum(),
-            previous[previous["budget"] > 0]["budget"].sum(),
-            "#94a3b8",
-            by_year["budget"].tolist(),
-        ),
-        (
-            "Total Revenue",
-            money(valid_revenue["revenue"].sum()),
-            valid_revenue["revenue"].sum(),
-            prev_revenue["revenue"].sum(),
-            GREEN,
-            by_year["revenue"].tolist(),
-        ),
-    ]
-
-    result = []
-    for label, display, current, prev, accent, series in values:
-        change, tone = metric_delta(current, prev)
-        result.append(
-            {
-                "label": label,
-                "display": display,
-                "change": change,
-                "tone": tone,
-                "accent": accent,
-                "series": series,
-            }
+    upper_left, upper_right = st.columns([0.60, 0.40], gap="medium")
+    with upper_left:
+        render_chart_panel(
+            "Box Office Success Analysis",
+            scatter_with_trend(filtered, "budget", "revenue", BLUE, 300),
+            f"Correlation: {corr:.2f} · Higher budgets generally show better box office success, but variance increases with budget size.",
         )
-    return result
+    with upper_right:
+        render_chart_panel(
+            "Genre Profitability (ROI)",
+            genre_roi_chart(filtered, metric_choice, top_n),
+            "Adventure, Action and high-performing genre groups can be compared after filtering.",
+        )
 
-
-def best_worst_genre(filtered: pd.DataFrame) -> tuple[str, str]:
-    genre_df = explode_genres(filtered.dropna(subset=["roi"]))
-    if genre_df.empty:
-        return "N/A", "N/A"
-    grouped = genre_df.groupby("genre")["roi"].median().sort_values(ascending=False)
-    return f"{grouped.index[0]} ({grouped.iloc[0]:.1f}x)", f"{grouped.index[-1]} ({grouped.iloc[-1]:.1f}x)"
-
-
-def reset_filters(min_year: int, max_year: int, all_genres: list[str]) -> None:
-    st.session_state["year_range"] = (min_year, max_year)
-    st.session_state["genres"] = all_genres[:8]
-    st.session_state["quick_range"] = "All"
-    st.session_state["min_votes"] = 1000
-    st.session_state["metric_choice"] = "ROI"
-    st.session_state["top_n"] = 12
-
-
-def keyed_widget_value(key: str, default):
-    """Return kwargs that avoid Streamlit's default/session_state warning."""
-
-    return {} if key in st.session_state else {"value": default}
-
-
-def keyed_widget_default(key: str, default):
-    return {} if key in st.session_state else {"default": default}
-
-
-def keyed_select_index(key: str, options: list, default):
-    return {} if key in st.session_state else {"index": options.index(default)}
+    lower_left, lower_mid, lower_right = st.columns([1, 1, 1], gap="medium")
+    with lower_left:
+        render_chart_panel(
+            "Revenue by Release Month",
+            revenue_month_chart(filtered),
+            "Summer and winter holiday months often show visible revenue peaks.",
+        )
+    with lower_mid:
+        render_chart_panel(
+            "Budget vs ROI",
+            scatter_with_trend(filtered, "budget", "roi", "#a3e635", 245, y_cap=roi_cap),
+            f"Correlation: {roi_corr:.2f} · ROI outliers are capped visually at the 98th percentile.",
+        )
+    with lower_right:
+        render_chart_panel(
+            "Rating Distribution by Genre",
+            rating_box_chart(filtered),
+            "Ratings are aggregated from user ratings and converted to a 10-point scale.",
+        )
 
 
 def main() -> None:
     inject_css()
-    view_mode = render_sidebar()
-    df = load_data()
 
+    df = load_data()
     min_year = int(df["year"].min())
     max_year = int(df["year"].max())
-    all_genres = sorted(
-        genre
-        for genre in set("|".join(df["genres"].dropna()).split("|"))
-        if genre and genre in CORE_GENRES
+    all_genres = available_genres(df)
+
+    sidebar_state = render_sidebar(df, min_year, max_year, all_genres)
+    filtered = apply_filters(
+        df,
+        sidebar_state.year_range,
+        sidebar_state.selected_genres,
+        sidebar_state.min_votes,
     )
-    default_year_range = (min_year, max_year)
-    default_genres = all_genres[:8]
-
-    top_left, top_right = st.columns([1, 0.42])
-    with top_left:
-        st.markdown(
-            """
-            <div class="title">
-              <h1>IMDB Movie Analytics Dashboard</h1>
-              <p>Revenue, Genre, Release Timing and Rating Insights  •  Based on 4000+ movies dataset</p>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-    with top_right:
-        c1, c2 = st.columns([1, 0.55])
-        with c1:
-            active_year_range = st.session_state.get("year_range", default_year_range)
-            st.markdown(
-                f'<div class="pill">Calendar&nbsp; {active_year_range[0]} - {active_year_range[1]}</div>',
-                unsafe_allow_html=True,
-            )
-        with c2:
-            if st.button("Reset", width="stretch"):
-                reset_filters(min_year, max_year, all_genres)
-                st.rerun()
-
-    if view_mode == "Time" and "quick_range" not in st.session_state:
-        st.session_state["quick_range"] = "10Y"
-
-    filter_col, chart_col = st.columns([0.17, 0.83], gap="medium")
-
-    with filter_col, st.container(border=True):
-        st.markdown('<div class="panel-title">Filters</div>', unsafe_allow_html=True)
-        year_range = st.slider(
-            "Year Range",
-            min_year,
-            max_year,
-            key="year_range",
-            **keyed_widget_value("year_range", default_year_range),
-        )
-        selected_genres = st.multiselect(
-            "Genres (Included)",
-            all_genres,
-            key="genres",
-            **keyed_widget_default("genres", default_genres),
-        )
-        quick = st.radio(
-            "Quick Range",
-            ["1Y", "3Y", "6Y", "10Y", "All"],
-            horizontal=True,
-            key="quick_range",
-            **keyed_select_index("quick_range", ["1Y", "3Y", "6Y", "10Y", "All"], "All"),
-        )
-        if quick != "All":
-            span = int(quick.replace("Y", ""))
-            year_range = (max(min_year, max_year - span + 1), max_year)
-        min_votes = st.number_input(
-            "Min Votes",
-            min_value=0,
-            max_value=int(df["analysis_vote_count"].max()),
-            step=100,
-            key="min_votes",
-            **keyed_widget_value("min_votes", 1000),
-        )
-        filtered_preview = apply_filters(df, year_range, selected_genres, min_votes)
-        best, worst = best_worst_genre(filtered_preview)
-        st.markdown(
-            f"""
-            <div class="small-stat"><span>Best Genre</span><strong class="good">{best}</strong></div>
-            <div class="small-stat"><span>Worst Genre</span><strong class="bad">{worst}</strong></div>
-            <div class="filter-note">All filters update KPI cards and charts together.</div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-    filtered = apply_filters(df, year_range, selected_genres, min_votes)
-    previous = previous_period(df, year_range, selected_genres, min_votes)
-    kpis = compute_kpis(filtered, previous)
-    render_kpi_grid(kpis)
+    previous = previous_period(
+        df,
+        sidebar_state.year_range,
+        sidebar_state.selected_genres,
+        sidebar_state.min_votes,
+    )
 
     corr_df = filtered[["budget", "revenue"]].dropna()
     corr_df = corr_df[(corr_df["budget"] > 0) & (corr_df["revenue"] > 0)]
-    corr = corr_df["budget"].corr(corr_df["revenue"]) if len(corr_df) > 2 else np.nan
+    corr = corr_df["budget"].corr(corr_df["revenue"]) if len(corr_df) > 2 else 0
 
     roi_cap = filtered["roi"].dropna().quantile(0.98) if filtered["roi"].notna().any() else None
     roi_corr_df = filtered[["budget", "roi"]].dropna()
     roi_corr_df = roi_corr_df[(roi_corr_df["budget"] > 0) & (roi_corr_df["roi"] > 0)]
     if roi_cap is not None:
         roi_corr_df = roi_corr_df[roi_corr_df["roi"] <= roi_cap]
-    roi_corr = roi_corr_df["budget"].corr(roi_corr_df["roi"]) if len(roi_corr_df) > 2 else np.nan
+    roi_corr = roi_corr_df["budget"].corr(roi_corr_df["roi"]) if len(roi_corr_df) > 2 else 0
 
-    with chart_col:
-        if view_mode == "Export":
-            with st.container(border=True):
-                st.markdown('<div class="panel-title">Export Current Selection</div>', unsafe_allow_html=True)
-                st.write(f"当前筛选结果：{len(filtered):,} movies")
-                st.download_button(
-                    "Download CSV",
-                    data=current_filtered_csv(filtered),
-                    file_name="filtered_movies.csv",
-                    mime="text/csv",
-                    width="stretch",
-                )
-                st.dataframe(
-                    filtered[
-                        [
-                            "title",
-                            "year",
-                            "budget",
-                            "revenue",
-                            "roi",
-                            "avg_rating",
-                            "analysis_vote_count",
-                            "genres",
-                        ]
-                    ].head(80),
-                    width="stretch",
-                    height=420,
-                )
-        elif view_mode == "Revenue":
-            left, right = st.columns([0.60, 0.40], gap="medium")
-            with left:
-                render_chart_panel(
-                    "Box Office Success Analysis",
-                    scatter_with_trend(filtered, "budget", "revenue", BLUE, 300),
-                    f"Correlation: {corr:.2f} · Higher budgets generally show better box office success.",
-                )
-            with right:
-                render_chart_panel(
-                    "Revenue by Release Month",
-                    revenue_month_chart(filtered),
-                    "Summer and winter holiday months often show visible revenue peaks.",
-                )
-            render_chart_panel(
-                "Budget vs ROI",
-                scatter_with_trend(filtered, "budget", "roi", "#a3e635", 245, y_cap=roi_cap),
-                f"Correlation: {roi_corr:.2f} · ROI outliers are capped visually at the 98th percentile.",
-            )
-        elif view_mode == "Genres":
-            metric_col, top_col = st.columns([0.28, 0.18])
-            with metric_col:
-                metric_choice = st.selectbox(
-                    "Metric",
-                    ["ROI", "Revenue"],
-                    key="metric_choice",
-                    **keyed_select_index("metric_choice", ["ROI", "Revenue"], "ROI"),
-                )
-            with top_col:
-                top_n = st.selectbox(
-                    "Top",
-                    [8, 10, 12, 15],
-                    key="top_n",
-                    **keyed_select_index("top_n", [8, 10, 12, 15], 12),
-                )
-            left, right = st.columns([0.48, 0.52], gap="medium")
-            with left:
-                render_chart_panel(
-                    "Genre Profitability (ROI)",
-                    genre_roi_chart(filtered, metric_choice, int(top_n)),
-                    "Genre groups can be compared by ROI or average revenue after filtering.",
-                )
-            with right:
-                render_chart_panel(
-                    "Rating Distribution by Genre",
-                    rating_box_chart(filtered),
-                    "Ratings are aggregated from user ratings and converted to a 10-point scale.",
-                )
-        elif view_mode == "Time":
-            render_chart_panel(
-                "Revenue by Release Month",
-                revenue_month_chart(filtered),
-                "Use Year Range and Quick Range to inspect release timing patterns.",
-            )
-        else:
-            upper_left, upper_right = st.columns([0.60, 0.40], gap="medium")
-            with upper_left:
-                render_chart_panel(
-                    "Box Office Success Analysis",
-                    scatter_with_trend(filtered, "budget", "revenue", BLUE, 300),
-                    f"Correlation: {corr:.2f} · Higher budgets generally show better box office success, but variance increases with budget size.",
-                )
-            with upper_right:
-                metric_col, top_col = st.columns(2)
-                with metric_col:
-                    metric_choice = st.selectbox(
-                        "Metric",
-                        ["ROI", "Revenue"],
-                        key="metric_choice",
-                        **keyed_select_index("metric_choice", ["ROI", "Revenue"], "ROI"),
-                    )
-                with top_col:
-                    top_n = st.selectbox(
-                        "Top",
-                        [8, 10, 12, 15],
-                        key="top_n",
-                        **keyed_select_index("top_n", [8, 10, 12, 15], 12),
-                    )
-                render_chart_panel(
-                    "Genre Profitability (ROI)",
-                    genre_roi_chart(filtered, metric_choice, int(top_n)),
-                    "Adventure, Action and high-performing genre groups can be compared after filtering.",
-                )
-
-            lower_left, lower_mid, lower_right = st.columns([1, 1, 1], gap="medium")
-            with lower_left:
-                render_chart_panel(
-                    "Revenue by Release Month",
-                    revenue_month_chart(filtered),
-                    "Summer and winter holiday months often show visible revenue peaks.",
-                )
-            with lower_mid:
-                render_chart_panel(
-                    "Budget vs ROI",
-                    scatter_with_trend(filtered, "budget", "roi", "#a3e635", 245, y_cap=roi_cap),
-                    f"Correlation: {roi_corr:.2f} · ROI outliers are capped visually at the 98th percentile.",
-                )
-            with lower_right:
-                render_chart_panel(
-                    "Rating Distribution by Genre",
-                    rating_box_chart(filtered),
-                    "Ratings are aggregated from user ratings and converted to a 10-point scale.",
-                )
-
-    st.markdown(
-        f"""
-        <div class="footer">
-          <span>Source: TMDB SQL dataset, processed locally for Streamlit dashboard</span>
-          <span>All values are aggregated and anonymized</span>
-          <span>Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M')}</span>
-        </div>
-        """,
-        unsafe_allow_html=True,
+    render_header(sidebar_state.year_range)
+    render_kpi_grid(compute_kpis(filtered, previous))
+    render_dashboard_view(
+        sidebar_state.view,
+        filtered,
+        sidebar_state.metric_choice,
+        sidebar_state.top_n,
+        corr,
+        roi_corr,
+        roi_cap,
     )
+    render_footer()
 
 
 if __name__ == "__main__":

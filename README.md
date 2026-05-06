@@ -1,18 +1,19 @@
 # 26dpwProject
 
-这是一个围绕 TMDB/IMDB 电影数据展开的数据库与数据可视化项目。当前主应用已经改为基于 Python + Streamlit 的交互式电影分析 dashboard，用于回答 SDS 中提出的几个核心问题：票房成功因素、类型收益、上映时间影响，以及评分分布。
+这是一个围绕 TMDB/IMDB 电影数据展开的数据库与数据可视化项目。当前主应用是基于 Python + Streamlit 的交互式电影分析 dashboard，用于回答 SDS 中提出的几个核心问题：票房成功因素、类型收益、上映时间影响，以及评分分布。
 
-`demo-movies/` 目录只作为 Streamlit 写法参考，不是最终项目入口。
+项目现在只保留一个主入口：`streamlit_app.py`。
 
 ## 当前实现内容
 
 - 从 `tmdb.sql/` 中解析 movie、genres、link_genres、rate 等核心 SQL 数据。
 - 生成本地分析宽表：`data/processed_movies.csv`。
 - 使用 Streamlit 实现 dashboard 主页面：`streamlit_app.py`。
+- 采用模块化 dashboard 架构，将数据、指标、图表、组件和样式拆分到 `app/` 目录。
 - 使用 Plotly 绘制 5 个核心图表。
 - 使用自定义 CSS 尽量复刻 `GUI.png` 的深色卡片式 dashboard 效果。
 - 将 `rate.rating` 从 0.5-5 分制换算为 0-10 分制，用于 GUI 中的 Rating 图表。
-- 左侧导航栏已从装饰入口改为功能入口，可切换分析视图并导出当前筛选数据。界面也针对浏览器缩放做了布局优化。
+- 过滤器和视图切换已移入 Streamlit 原生 sidebar，主页面只展示标题、KPI 和图表。
 
 ## 文件结构
 
@@ -20,6 +21,13 @@
 .
 ├── streamlit_app.py            # 主 Streamlit dashboard
 ├── requirements.txt            # 主项目 Python 依赖
+├── app/
+│   ├── config.py               # 常量、颜色、默认配置
+│   ├── data.py                 # 数据加载和筛选
+│   ├── metrics.py              # KPI 和类型表现计算
+│   ├── charts.py               # Plotly 图表
+│   ├── components.py           # Sidebar、KPI、图表卡片和导出
+│   └── styles.py               # 全局 CSS
 ├── scripts/
 │   └── build_dataset.py        # 从 SQL 生成分析数据
 ├── data/
@@ -30,8 +38,7 @@
 ├── IMDB_SDS_Draft.docx         # 系统设计文档草稿
 ├── ERmodel.pdf                 # ER 模型文档
 ├── ER关系.pdf                  # ER 关系文档
-├── movie_dashboard.html        # 早期 HTML 预览版本
-└── demo-movies/                # 仅供参考的 Streamlit demo
+└── movie_dashboard.html        # 早期 HTML 预览版本
 ```
 
 ## 如何运行主 Dashboard
@@ -89,19 +96,28 @@ http://localhost:8501
 ## Dashboard 功能
 
 - 顶部 KPI：Total Movies、Avg Revenue、Avg ROI、Avg Rating、Total Budget、Total Revenue。
-- 过滤器：年份范围、电影类型、快捷年份范围、最低投票数。
+- Sidebar：视图切换、年份范围、电影类型、快捷年份范围、最低投票数、类型表现摘要和导出入口。
 - 图表：
   - Box Office Success Analysis：预算与收入关系。
   - Genre Profitability：不同类型的 ROI 或平均收入。
   - Revenue by Release Month：上映月份与收入趋势。
   - Budget vs ROI：预算与投资回报率关系。
   - Rating Distribution by Genre：不同类型电影的评分分布。
-- 左侧导航：
-  - Home：显示完整 dashboard。
-  - Rev：聚焦收入、预算和 ROI 相关分析。
-  - Genre：聚焦类型 ROI 和评分分布。
+- 视图：
+  - Overview：显示完整 dashboard。
+  - Revenue：聚焦收入、预算和 ROI 相关分析。
+  - Genres：聚焦类型 ROI 和评分分布。
   - Time：聚焦上映月份与收入趋势。
   - Export：导出当前筛选后的 CSV 数据。
+
+## 代码结构说明
+
+- `streamlit_app.py`：应用入口，只负责页面编排。
+- `app/data.py`：读取 `data/processed_movies.csv`，并按 sidebar 条件筛选数据。
+- `app/metrics.py`：计算 KPI、金额格式、类型最佳/最差表现。
+- `app/charts.py`：生成 Plotly 图表。
+- `app/components.py`：渲染 sidebar、标题、KPI 卡片、图表卡片、导出和 footer。
+- `app/styles.py`：注入 dashboard 深色主题 CSS。
 
 ## 可行性与正确性检查
 
