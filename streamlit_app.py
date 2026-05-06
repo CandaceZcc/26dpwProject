@@ -85,46 +85,54 @@ def inject_css() -> None:
         [data-testid="stToolbar"] {{ display: none; }}
         [data-testid="stDecoration"] {{ display: none; }}
         .block-container {{
-            padding: 1.05rem 1.25rem .8rem 1.25rem;
-            max-width: 1660px;
+            padding: .9rem 1.15rem .8rem 1.15rem;
+            max-width: 1580px;
         }}
 
         section[data-testid="stSidebar"] {{
             background: linear-gradient(180deg, #0b1728 0%, #07111f 100%);
             border-right: 1px solid var(--border);
-            width: 108px !important;
-            min-width: 108px !important;
+            width: 78px !important;
+            min-width: 78px !important;
         }}
         section[data-testid="stSidebar"] [data-testid="stSidebarUserContent"] {{
-            padding: 1rem .75rem;
+            padding: .8rem .45rem;
         }}
         .nav-logo {{
-            width: 48px; height: 48px; margin: .25rem auto .7rem auto;
+            width: 40px; height: 40px; margin: .25rem auto .8rem auto;
             border-radius: 12px; display: grid; place-items: center;
             background: rgba(59,130,246,.15);
             border: 1px solid rgba(59,130,246,.45);
             box-shadow: 0 0 26px rgba(59,130,246,.22);
-            color: #8fd3ff; font-weight: 800;
+            color: #8fd3ff; font-weight: 800; font-size: 12px;
         }}
-        .nav-item {{
-            height: 72px; margin: .22rem auto; border-radius: 12px;
-            display: flex; flex-direction: column; gap: 6px; align-items: center; justify-content: center;
-            color: #b8c4d8; font-size: 12px;
+        section[data-testid="stSidebar"] .stButton > button {{
+            height: 58px; padding: .2rem .15rem; margin: .12rem auto;
+            border-radius: 11px; border: 1px solid transparent;
+            background: transparent; color: #b8c4d8; font-size: 10px;
+            line-height: 1.1; white-space: normal;
+            display: flex; justify-content: center;
         }}
-        .nav-item.active {{
+        section[data-testid="stSidebar"] .stButton > button:hover {{
             background: rgba(59,130,246,.15); color: #8fd3ff;
             border: 1px solid rgba(59,130,246,.28);
         }}
-        .nav-icon svg {{ width: 21px; height: 21px; stroke: currentColor; fill: none; stroke-width: 1.8; }}
+        .active-nav {{
+            height: 58px; margin: .12rem auto; border-radius: 11px;
+            display: grid; place-items: center; text-align: center;
+            color: #8fd3ff; font-size: 10px; line-height: 1.15;
+            background: rgba(59,130,246,.15);
+            border: 1px solid rgba(59,130,246,.28);
+        }}
 
         .topbar {{
             display: flex; justify-content: space-between; align-items: flex-start;
             gap: 1rem; margin-bottom: 1rem;
         }}
         .title h1 {{
-            margin: 0; font-size: 32px; line-height: 1.05; letter-spacing: -.02em; color: #f7fbff;
+            margin: 0; font-size: 30px; line-height: 1.05; letter-spacing: -.02em; color: #f7fbff;
         }}
-        .title p {{ margin: .35rem 0 0 0; color: var(--muted); font-size: 16px; }}
+        .title p {{ margin: .35rem 0 0 0; color: var(--muted); font-size: 14px; }}
         .top-controls {{ display: flex; gap: .75rem; align-items: center; }}
         .pill {{
             display: inline-flex; align-items: center; gap: .55rem;
@@ -136,10 +144,10 @@ def inject_css() -> None:
 
         .kpi-grid {{
             display: grid; grid-template-columns: repeat(6, minmax(0, 1fr));
-            gap: .9rem; margin-bottom: .9rem;
+            gap: .85rem; margin: .95rem 0 1rem;
         }}
         .kpi-card {{
-            min-height: 118px; padding: 1rem 1rem .85rem;
+            min-height: 112px; padding: .95rem .95rem .8rem;
             background: linear-gradient(145deg, rgba(18,32,51,.98), rgba(13,26,43,.98));
             border: 1px solid var(--border); border-radius: 10px; position: relative; overflow: hidden;
             box-shadow: 0 16px 35px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.04);
@@ -148,8 +156,8 @@ def inject_css() -> None:
             content: ""; position: absolute; inset: 0 auto 0 0; width: 2px; background: var(--accent);
             box-shadow: 0 0 22px var(--accent);
         }}
-        .kpi-label {{ color: #dbe7f8; font-weight: 700; font-size: 13px; }}
-        .kpi-value {{ font-size: 27px; font-weight: 800; margin-top: .45rem; color: #fff; letter-spacing: -.02em; }}
+        .kpi-label {{ color: #dbe7f8; font-weight: 700; font-size: 12px; }}
+        .kpi-value {{ font-size: 25px; font-weight: 800; margin-top: .45rem; color: #fff; letter-spacing: -.02em; }}
         .kpi-foot {{ display: flex; justify-content: space-between; align-items: end; gap: .5rem; margin-top: .3rem; }}
         .kpi-change.pos {{ color: var(--teal); }}
         .kpi-change.neg {{ color: var(--rose); }}
@@ -163,12 +171,12 @@ def inject_css() -> None:
             padding: 1rem;
         }}
         .panel-title {{
-            color: #f7fbff; font-size: 17px; font-weight: 800; margin: 0 0 .65rem 0;
+            color: #f7fbff; font-size: 15px; font-weight: 800; margin: 0 0 .45rem 0;
         }}
         .filter-note, .insight {{
-            color: #c8d4e6; font-size: 13px; line-height: 1.5;
+            color: #c8d4e6; font-size: 12px; line-height: 1.45;
             background: rgba(255,255,255,.035); border-top: 1px solid rgba(255,255,255,.06);
-            padding: .72rem .8rem; border-radius: 8px; margin-top: .8rem;
+            padding: .62rem .72rem; border-radius: 8px; margin-top: .55rem;
         }}
         .small-stat {{
             display: flex; justify-content: space-between; color: #dbe7f8;
@@ -184,11 +192,25 @@ def inject_css() -> None:
         div[data-testid="stPlotlyChart"] {{
             border-radius: 10px; overflow: hidden;
         }}
+        div[data-testid="stVerticalBlockBorderWrapper"] {{
+            background: linear-gradient(145deg, rgba(18,32,51,.96), rgba(11,24,40,.96));
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            box-shadow: 0 16px 35px rgba(0,0,0,.20), inset 0 1px 0 rgba(255,255,255,.035);
+        }}
+        div[data-testid="stVerticalBlockBorderWrapper"] > div {{
+            padding: .8rem .9rem;
+        }}
         .stSlider, .stMultiSelect, .stNumberInput, .stRadio, .stSelectbox {{
             color: var(--text);
         }}
         label, [data-testid="stWidgetLabel"] {{ color: #dbe7f8 !important; font-weight: 600; }}
         .st-emotion-cache-1v0mbdj, .st-emotion-cache-1kyxreq {{ justify-content: center; }}
+        div[data-baseweb="select"] > div,
+        div[data-baseweb="input"] > div {{
+            background: rgba(255,255,255,.08);
+            border-color: rgba(255,255,255,.12);
+        }}
 
         .footer {{
             display: flex; justify-content: space-between; gap: 1rem; align-items: center;
@@ -219,27 +241,35 @@ def svg_icon(kind: str) -> str:
     return icons[kind]
 
 
-def render_sidebar() -> None:
+def set_view_mode(mode: str) -> None:
+    st.session_state["view_mode"] = mode
+
+
+def render_sidebar() -> str:
+    if "view_mode" not in st.session_state:
+        st.session_state["view_mode"] = "Overview"
+
     items = [
-        ("home", "Overview", True),
-        ("grid", "Revenue", False),
-        ("star", "Genres", False),
-        ("clock", "Time", False),
-        ("gear", "Settings", False),
-        ("export", "Export", False),
+        ("Overview", "Overview"),
+        ("Revenue", "Revenue"),
+        ("Genres", "Genres"),
+        ("Time", "Time"),
+        ("Export", "Export"),
     ]
     with st.sidebar:
         st.markdown('<div class="nav-logo">IM</div>', unsafe_allow_html=True)
-        for icon, label, active in items:
-            st.markdown(
-                f"""
-                <div class="nav-item {'active' if active else ''}">
-                  <div class="nav-icon">{svg_icon(icon)}</div>
-                  <div>{label}</div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
+        for mode, label in items:
+            if st.session_state["view_mode"] == mode:
+                st.markdown(f'<div class="active-nav">{label}</div>', unsafe_allow_html=True)
+            else:
+                st.button(
+                    label,
+                    key=f"nav_{mode}",
+                    on_click=set_view_mode,
+                    args=(mode,),
+                    width="stretch",
+                )
+    return st.session_state["view_mode"]
 
 
 @st.cache_data(show_spinner=False)
@@ -331,6 +361,24 @@ def kpi_card(label: str, value: str, change: str, tone: str, accent: str, series
       </div>
     </div>
     """
+
+
+def render_kpi_grid(kpis: list[dict]) -> None:
+    st.html(
+        '<div class="kpi-grid">'
+        + "".join(
+            kpi_card(
+                item["label"],
+                item["display"],
+                item["change"],
+                item["tone"],
+                item["accent"],
+                item["series"],
+            )
+            for item in kpis
+        )
+        + "</div>"
+    )
 
 
 def explode_genres(df: pd.DataFrame) -> pd.DataFrame:
@@ -514,6 +562,17 @@ def rating_box_chart(df: pd.DataFrame) -> go.Figure:
     return fig
 
 
+def render_chart_panel(title: str, fig: go.Figure, insight: str) -> None:
+    with st.container(border=True):
+        st.markdown(f'<div class="panel-title">{title}</div>', unsafe_allow_html=True)
+        st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
+        st.markdown(f'<div class="insight">{insight}</div>', unsafe_allow_html=True)
+
+
+def current_filtered_csv(filtered: pd.DataFrame) -> bytes:
+    return filtered.to_csv(index=False).encode("utf-8-sig")
+
+
 def compute_kpis(filtered: pd.DataFrame, previous: pd.DataFrame) -> list[dict]:
     valid_revenue = filtered[filtered["revenue"] > 0]
     valid_budget = filtered[filtered["budget"] > 0]
@@ -631,7 +690,7 @@ def keyed_select_index(key: str, options: list, default):
 
 def main() -> None:
     inject_css()
-    render_sidebar()
+    view_mode = render_sidebar()
     df = load_data()
 
     min_year = int(df["year"].min())
@@ -668,10 +727,13 @@ def main() -> None:
                 reset_filters(min_year, max_year, all_genres)
                 st.rerun()
 
-    filter_col, chart_col = st.columns([0.20, 0.80], gap="medium")
+    if view_mode == "Time" and "quick_range" not in st.session_state:
+        st.session_state["quick_range"] = "10Y"
 
-    with filter_col:
-        st.markdown('<div class="panel"><div class="panel-title">Filters</div>', unsafe_allow_html=True)
+    filter_col, main_col = st.columns([0.18, 0.82], gap="medium")
+
+    with filter_col, st.container(border=True):
+        st.markdown('<div class="panel-title">Filters</div>', unsafe_allow_html=True)
         year_range = st.slider(
             "Year Range",
             min_year,
@@ -710,7 +772,6 @@ def main() -> None:
             <div class="small-stat"><span>Best Genre</span><strong class="good">{best}</strong></div>
             <div class="small-stat"><span>Worst Genre</span><strong class="bad">{worst}</strong></div>
             <div class="filter-note">All filters update KPI cards and charts together.</div>
-            </div>
             """,
             unsafe_allow_html=True,
         )
@@ -719,39 +780,68 @@ def main() -> None:
     previous = previous_period(df, year_range, selected_genres, min_votes)
     kpis = compute_kpis(filtered, previous)
 
-    with chart_col:
-        st.markdown(
-            '<div class="kpi-grid">'
-            + "".join(
-                kpi_card(
-                    item["label"],
-                    item["display"],
-                    item["change"],
-                    item["tone"],
-                    item["accent"],
-                    item["series"],
-                )
-                for item in kpis
-            )
-            + "</div>",
-            unsafe_allow_html=True,
-        )
+    corr_df = filtered[["budget", "revenue"]].dropna()
+    corr_df = corr_df[(corr_df["budget"] > 0) & (corr_df["revenue"] > 0)]
+    corr = corr_df["budget"].corr(corr_df["revenue"]) if len(corr_df) > 2 else np.nan
 
-        upper_left, upper_right = st.columns([0.56, 0.44], gap="medium")
-        with upper_left:
-            st.markdown('<div class="panel"><div class="panel-title">Box Office Success Analysis</div>', unsafe_allow_html=True)
-            fig = scatter_with_trend(filtered, "budget", "revenue", BLUE, 300)
-            corr_df = filtered[["budget", "revenue"]].dropna()
-            corr_df = corr_df[(corr_df["budget"] > 0) & (corr_df["revenue"] > 0)]
-            corr = corr_df["budget"].corr(corr_df["revenue"]) if len(corr_df) > 2 else np.nan
-            st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
-            st.markdown(
-                f'<div class="insight">Correlation: {corr:.2f} · Higher budgets generally show better box office success, but variance increases with budget size.</div></div>',
-                unsafe_allow_html=True,
+    roi_cap = filtered["roi"].dropna().quantile(0.98) if filtered["roi"].notna().any() else None
+    roi_corr_df = filtered[["budget", "roi"]].dropna()
+    roi_corr_df = roi_corr_df[(roi_corr_df["budget"] > 0) & (roi_corr_df["roi"] > 0)]
+    if roi_cap is not None:
+        roi_corr_df = roi_corr_df[roi_corr_df["roi"] <= roi_cap]
+    roi_corr = roi_corr_df["budget"].corr(roi_corr_df["roi"]) if len(roi_corr_df) > 2 else np.nan
+
+    with main_col:
+        render_kpi_grid(kpis)
+
+        if view_mode == "Export":
+            with st.container(border=True):
+                st.markdown('<div class="panel-title">Export Current Selection</div>', unsafe_allow_html=True)
+                st.write(f"当前筛选结果：{len(filtered):,} movies")
+                st.download_button(
+                    "Download CSV",
+                    data=current_filtered_csv(filtered),
+                    file_name="filtered_movies.csv",
+                    mime="text/csv",
+                    width="stretch",
+                )
+                st.dataframe(
+                    filtered[
+                        [
+                            "title",
+                            "year",
+                            "budget",
+                            "revenue",
+                            "roi",
+                            "avg_rating",
+                            "analysis_vote_count",
+                            "genres",
+                        ]
+                    ].head(80),
+                    width="stretch",
+                    height=420,
+                )
+        elif view_mode == "Revenue":
+            left, right = st.columns([0.58, 0.42], gap="medium")
+            with left:
+                render_chart_panel(
+                    "Box Office Success Analysis",
+                    scatter_with_trend(filtered, "budget", "revenue", BLUE, 330),
+                    f"Correlation: {corr:.2f} · Higher budgets generally show better box office success.",
+                )
+            with right:
+                render_chart_panel(
+                    "Revenue by Release Month",
+                    revenue_month_chart(filtered),
+                    "Summer and winter holiday months often show visible revenue peaks.",
+                )
+            render_chart_panel(
+                "Budget vs ROI",
+                scatter_with_trend(filtered, "budget", "roi", "#a3e635", 300, y_cap=roi_cap),
+                f"Correlation: {roi_corr:.2f} · ROI outliers are capped visually at the 98th percentile.",
             )
-        with upper_right:
-            st.markdown('<div class="panel"><div class="panel-title">Genre Profitability (ROI)</div>', unsafe_allow_html=True)
-            metric_col, top_col = st.columns(2)
+        elif view_mode == "Genres":
+            metric_col, top_col = st.columns([0.28, 0.18])
             with metric_col:
                 metric_choice = st.selectbox(
                     "Metric",
@@ -766,32 +856,74 @@ def main() -> None:
                     key="top_n",
                     **keyed_select_index("top_n", [8, 10, 12, 15], 12),
                 )
-            st.plotly_chart(genre_roi_chart(filtered, metric_choice, int(top_n)), width="stretch", config={"displayModeBar": False})
-            st.markdown('<div class="insight">Adventure, Action and high-performing genre groups can be compared after filtering.</div></div>', unsafe_allow_html=True)
-
-        lower_left, lower_mid, lower_right = st.columns([0.31, 0.31, 0.38], gap="medium")
-        with lower_left:
-            st.markdown('<div class="panel"><div class="panel-title">Revenue by Release Month</div>', unsafe_allow_html=True)
-            st.plotly_chart(revenue_month_chart(filtered), width="stretch", config={"displayModeBar": False})
-            st.markdown('<div class="insight">Summer and winter holiday months often show visible revenue peaks.</div></div>', unsafe_allow_html=True)
-        with lower_mid:
-            st.markdown('<div class="panel"><div class="panel-title">Budget vs ROI</div>', unsafe_allow_html=True)
-            roi_cap = filtered["roi"].dropna().quantile(0.98) if filtered["roi"].notna().any() else None
-            roi_fig = scatter_with_trend(filtered, "budget", "roi", "#a3e635", 242, y_cap=roi_cap)
-            roi_corr_df = filtered[["budget", "roi"]].dropna()
-            roi_corr_df = roi_corr_df[(roi_corr_df["budget"] > 0) & (roi_corr_df["roi"] > 0)]
-            if roi_cap is not None:
-                roi_corr_df = roi_corr_df[roi_corr_df["roi"] <= roi_cap]
-            roi_corr = roi_corr_df["budget"].corr(roi_corr_df["roi"]) if len(roi_corr_df) > 2 else np.nan
-            st.plotly_chart(roi_fig, width="stretch", config={"displayModeBar": False})
-            st.markdown(
-                f'<div class="insight">Correlation: {roi_corr:.2f} · ROI outliers are capped visually at the 98th percentile.</div></div>',
-                unsafe_allow_html=True,
+            left, right = st.columns([0.48, 0.52], gap="medium")
+            with left:
+                render_chart_panel(
+                    "Genre Profitability (ROI)",
+                    genre_roi_chart(filtered, metric_choice, int(top_n)),
+                    "Genre groups can be compared by ROI or average revenue after filtering.",
+                )
+            with right:
+                render_chart_panel(
+                    "Rating Distribution by Genre",
+                    rating_box_chart(filtered),
+                    "Ratings are aggregated from user ratings and converted to a 10-point scale.",
+                )
+        elif view_mode == "Time":
+            render_chart_panel(
+                "Revenue by Release Month",
+                revenue_month_chart(filtered),
+                "Use Year Range and Quick Range to inspect release timing patterns.",
             )
-        with lower_right:
-            st.markdown('<div class="panel"><div class="panel-title">Rating Distribution by Genre</div>', unsafe_allow_html=True)
-            st.plotly_chart(rating_box_chart(filtered), width="stretch", config={"displayModeBar": False})
-            st.markdown('<div class="insight">Ratings are aggregated from user ratings and converted to a 10-point scale.</div></div>', unsafe_allow_html=True)
+        else:
+            upper_left, upper_right = st.columns([0.58, 0.42], gap="medium")
+            with upper_left:
+                render_chart_panel(
+                    "Box Office Success Analysis",
+                    scatter_with_trend(filtered, "budget", "revenue", BLUE, 305),
+                    f"Correlation: {corr:.2f} · Higher budgets generally show better box office success, but variance increases with budget size.",
+                )
+            with upper_right:
+                metric_col, top_col = st.columns(2)
+                with metric_col:
+                    metric_choice = st.selectbox(
+                        "Metric",
+                        ["ROI", "Revenue"],
+                        key="metric_choice",
+                        **keyed_select_index("metric_choice", ["ROI", "Revenue"], "ROI"),
+                    )
+                with top_col:
+                    top_n = st.selectbox(
+                        "Top",
+                        [8, 10, 12, 15],
+                        key="top_n",
+                        **keyed_select_index("top_n", [8, 10, 12, 15], 12),
+                    )
+                render_chart_panel(
+                    "Genre Profitability (ROI)",
+                    genre_roi_chart(filtered, metric_choice, int(top_n)),
+                    "Adventure, Action and high-performing genre groups can be compared after filtering.",
+                )
+
+            lower_left, lower_mid, lower_right = st.columns([0.31, 0.31, 0.38], gap="medium")
+            with lower_left:
+                render_chart_panel(
+                    "Revenue by Release Month",
+                    revenue_month_chart(filtered),
+                    "Summer and winter holiday months often show visible revenue peaks.",
+                )
+            with lower_mid:
+                render_chart_panel(
+                    "Budget vs ROI",
+                    scatter_with_trend(filtered, "budget", "roi", "#a3e635", 242, y_cap=roi_cap),
+                    f"Correlation: {roi_corr:.2f} · ROI outliers are capped visually at the 98th percentile.",
+                )
+            with lower_right:
+                render_chart_panel(
+                    "Rating Distribution by Genre",
+                    rating_box_chart(filtered),
+                    "Ratings are aggregated from user ratings and converted to a 10-point scale.",
+                )
 
     st.markdown(
         f"""
