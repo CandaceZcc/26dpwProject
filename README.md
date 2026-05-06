@@ -21,6 +21,8 @@
 .
 ├── streamlit_app.py            # 主 Streamlit dashboard
 ├── requirements.txt            # 主项目 Python 依赖
+├── run_windows.bat             # Windows 一键安装并启动
+├── run_unix.sh                 # macOS/Linux 一键安装并启动
 ├── app/
 │   ├── config.py               # 常量、颜色、默认配置
 │   ├── data.py                 # 数据加载和筛选
@@ -43,21 +45,68 @@
 
 ## 如何运行主 Dashboard
 
+### 最简单方式：Windows
+
+大部分组员如果使用 Windows，可以直接双击项目根目录下的：
+
+```text
+run_windows.bat
+```
+
+它会自动完成：
+
+- 创建 `.venv` 虚拟环境。
+- 安装 `requirements.txt` 中的依赖。
+- 启动 Streamlit dashboard。
+
+如果双击后窗口一闪而过，可以在项目目录中打开 PowerShell，然后运行：
+
+```powershell
+.\run_windows.bat
+```
+
+启动成功后浏览器会打开本地页面，通常地址为：
+
+```text
+http://localhost:8501
+```
+
+### 最简单方式：macOS / Linux
+
+```sh
+chmod +x run_unix.sh
+./run_unix.sh
+```
+
+## 手动安装方式
+
 ### 1. 创建虚拟环境
+
+Windows PowerShell：
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+```
+
+如果 PowerShell 不允许激活虚拟环境，可以改用不激活的方式运行后续命令，见下面的“Windows 不激活环境运行方式”。
+
+macOS / Linux：
 
 ```sh
 python3 -m venv .venv
 source .venv/bin/activate
 ```
 
-Windows PowerShell 可使用：
+### 2. 安装依赖
+
+Windows PowerShell：
 
 ```powershell
-python -m venv .venv
-.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
 ```
 
-### 2. 安装依赖
+macOS / Linux：
 
 ```sh
 python3 -m pip install -r requirements.txt
@@ -67,15 +116,33 @@ python3 -m pip install -r requirements.txt
 
 ### 3. 生成分析数据
 
+通常可以跳过这一步，因为仓库已经包含 `data/processed_movies.csv`，pull 下来后可以直接运行 dashboard。
+
+如果需要重新从 SQL 生成数据：
+
+Windows PowerShell：
+
+```powershell
+python scripts\build_dataset.py
+```
+
+macOS / Linux：
+
 ```sh
 python3 scripts/build_dataset.py
 ```
 
-如果 `data/processed_movies.csv` 已存在，可以跳过这一步。Streamlit 启动时如果发现数据文件不存在，也会自动尝试生成。
+Streamlit 启动时如果发现数据文件不存在，也会自动尝试生成。
 
 ### 4. 启动 dashboard
 
-推荐使用下面这条命令，避免出现 `zsh: command not found: streamlit`：
+Windows 推荐使用下面这条命令，避免出现 `streamlit` 命令找不到：
+
+```powershell
+.\.venv\Scripts\python.exe -m streamlit run streamlit_app.py
+```
+
+macOS / Linux 推荐使用：
 
 ```sh
 .venv/bin/streamlit run streamlit_app.py
@@ -92,6 +159,33 @@ streamlit run streamlit_app.py
 ```text
 http://localhost:8501
 ```
+
+## 常见问题
+
+### 1. Windows 提示找不到 `python`
+
+先安装 Python 3.10 或以上版本，并在安装时勾选 `Add Python to PATH`。安装后重新打开 PowerShell。
+
+### 2. PowerShell 不允许激活 `.venv`
+
+可以不激活虚拟环境，直接运行：
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m streamlit run streamlit_app.py
+```
+
+### 3. 提示 `streamlit: command not found`
+
+不要直接运行 `streamlit run streamlit_app.py`，改用：
+
+```powershell
+.\.venv\Scripts\python.exe -m streamlit run streamlit_app.py
+```
+
+### 4. 依赖安装很慢
+
+可以换国内网络或稍后重试。依赖只需要第一次安装，之后运行会快很多。
 
 ## Dashboard 功能
 

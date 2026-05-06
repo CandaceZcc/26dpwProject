@@ -1,5 +1,33 @@
+# Python virtual environments
 .venv/
+venv/
+env/
+ENV/
+
+# Python cache/build output
 __pycache__/
 *.py[cod]
-.streamlit/
+*$py.class
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
+build/
+dist/
+*.egg-info/
+
+# Streamlit local/private config
+.streamlit/
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs and local temp files
+*.log
+*.tmp
+*.bak
