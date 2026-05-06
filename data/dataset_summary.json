@@ -1,0 +1,10 @@
+{
+  "source": "tmdb.sql",
+  "movies_loaded": 45433,
+  "movies_written": 45346,
+  "movies_skipped_no_year": 87,
+  "movies_with_roi": 5375,
+  "movies_with_rating": 9025,
+  "rating_note": "rate.rating is stored on a 0.5-5 scale and converted to 0-10.",
+  "generated_file": "data/processed_movies.csv"
+}
