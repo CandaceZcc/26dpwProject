@@ -12,7 +12,7 @@
 - 使用 Plotly 绘制 5 个核心图表。
 - 使用自定义 CSS 尽量复刻 `GUI.png` 的深色卡片式 dashboard 效果。
 - 将 `rate.rating` 从 0.5-5 分制换算为 0-10 分制，用于 GUI 中的 Rating 图表。
-- 左侧导航栏已从装饰入口改为功能入口，可切换分析视图并导出当前筛选数据。
+- 左侧导航栏已从装饰入口改为功能入口，可切换分析视图并导出当前筛选数据。界面也针对浏览器缩放做了布局优化。
 
 ## 文件结构
 
@@ -97,9 +97,9 @@ http://localhost:8501
   - Budget vs ROI：预算与投资回报率关系。
   - Rating Distribution by Genre：不同类型电影的评分分布。
 - 左侧导航：
-  - Overview：显示完整 dashboard。
-  - Revenue：聚焦收入、预算和 ROI 相关分析。
-  - Genres：聚焦类型 ROI 和评分分布。
+  - Home：显示完整 dashboard。
+  - Rev：聚焦收入、预算和 ROI 相关分析。
+  - Genre：聚焦类型 ROI 和评分分布。
   - Time：聚焦上映月份与收入趋势。
   - Export：导出当前筛选后的 CSV 数据。
 
@@ -114,7 +114,7 @@ http://localhost:8501
 
 ## 接下来的 TODO
 
-- 继续微调 CSS，让 Streamlit 页面更接近 `GUI.png` 的像素效果。
+- 继续微调 CSS，让 Streamlit 页面更接近 `GUI.png` 的像素效果，尤其是不同浏览器缩放比例下的细节。
 - 增加 KPI sparkline 的真实历史趋势解释。
 - 继续完善 Revenue、Genres、Time 等视图的交互细节。
 - 补充 dashboard 截图，放入最终报告。
