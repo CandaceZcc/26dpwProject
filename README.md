@@ -29,8 +29,9 @@
 │   ├── data.py                 # 数据加载和筛选
 │   ├── metrics.py              # KPI 和类型表现计算
 │   ├── charts.py               # Plotly 图表
-│   ├── components.py           # Sidebar、KPI、图表卡片和导出
+│   ├── components.py           # Sidebar、KPI、图表卡片、导出、Bottom
 │   ├── predict.py              # 电影票房/ROI 预测模块（GradientBoosting）
+│   ├── insights.py             # 数据洞察分析面板
 │   └── styles.py               # 全局 CSS
 ├── scripts/
 │   └── build_dataset.py        # 从 SQL 生成分析数据
@@ -210,6 +211,14 @@ http://localhost:8501
   - 输入电影参数（预算、类型、发行月份、片长）预测票房、ROI 和盈利概率。
   - 展示可比影片散点图、ROI 分布和 Top 5 对标影片。
   - 详见 [PREDICT_MODULE.md](./PREDICT_MODULE.md)。
+- 洞察分析面板：
+  - 4 个关键 KPI 卡片：最高 ROI 类型、最佳上映月份、盈利率、长片 ROI。
+  - 3 个数据图表：十年收入趋势、类型 ROI 排名、评分-收入分布、片长-ROI 关系。
+  - 2 个文本发现：多类型策略分析、评分甜蜜点识别。
+  - 实时计算自 45,000+ 电影数据集的关键统计和趋势。
+- 项目信息面板：
+  - 项目概览、学校课程、数据源说明、GitHub 仓库链接。
+  - 显示在 dashboard 底部，便于项目追溯和协作。
 
 ## 代码结构说明
 
@@ -217,8 +226,9 @@ http://localhost:8501
 - `app/data.py`：读取 `data/processed_movies.csv`，并按 sidebar 条件筛选数据。
 - `app/metrics.py`：计算 KPI、金额格式、类型最佳/最差表现。
 - `app/charts.py`：生成 Plotly 图表。
-- `app/components.py`：渲染 sidebar、标题、KPI 卡片、图表卡片、导出和 footer。
+- `app/components.py`：渲染 sidebar、标题、KPI 卡片、图表卡片、导出、bottom 项目信息和 footer。
 - `app/predict.py`：电影票房和 ROI 预测模块，基于 GradientBoosting 算法训练的三个预测模型。
+- `app/insights.py`：数据洞察分析面板，计算并展示 KPI、趋势图表和关键发现。
 - `app/styles.py`：注入 dashboard 深色主题 CSS。
 
 ## 可行性与正确性检查
