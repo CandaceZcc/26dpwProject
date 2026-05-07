@@ -12,6 +12,7 @@ from app.components import (
     render_header,
     render_kpi_grid,
     render_sidebar,
+    resolve_sidebar_state,
 )
 from app.data import apply_filters, available_genres, load_data
 from app.metrics import compute_kpis
@@ -24,7 +25,6 @@ st.set_page_config(
     page_title="IMDB Movie Analytics Dashboard",
     page_icon="IMDB",
     layout="wide",
-    initial_sidebar_state="expanded",
 )
 
 
@@ -121,7 +121,7 @@ def main() -> None:
     max_year = int(df["year"].max())
     all_genres = available_genres(df)
 
-    sidebar_state = render_sidebar(df, min_year, max_year, all_genres)
+    sidebar_state = resolve_sidebar_state(df, min_year, max_year, all_genres)
     filtered = apply_filters(
         df,
         sidebar_state.year_range,
@@ -141,16 +141,21 @@ def main() -> None:
 
     render_header(sidebar_state.year_range, min_year, max_year)
     render_kpi_grid(compute_kpis(filtered))
-    render_dashboard_view(
-        sidebar_state.view,
-        filtered,
-        df,
-        sidebar_state.metric_choice,
-        sidebar_state.top_n,
-        corr,
-        roi_corr,
-        roi_cap,
-    )
+
+    filter_col, dashboard_col = st.columns([0.19, 0.81], gap="medium")
+    with filter_col:
+        sidebar_state = render_sidebar(df, min_year, max_year, all_genres)
+    with dashboard_col:
+        render_dashboard_view(
+            sidebar_state.view,
+            filtered,
+            df,
+            sidebar_state.metric_choice,
+            sidebar_state.top_n,
+            corr,
+            roi_corr,
+            roi_cap,
+        )
     st.divider()
     render_predict_view(df)
     st.divider()

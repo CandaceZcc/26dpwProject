@@ -31,17 +31,13 @@ def inject_css() -> None:
             font-family: Inter, sans-serif;
         }}
         [data-testid="stHeader"] {{ background: transparent; }}
-        [data-testid="stToolbar"], [data-testid="stDecoration"] {{ display: none; }}
+        [data-testid="stToolbar"], [data-testid="stDecoration"], [data-testid="collapsedControl"] {{ display: none; }}
         .block-container {{
             max-width: 1760px;
             padding: .9rem 1.2rem .8rem;
         }}
         section[data-testid="stSidebar"] {{
-            background: linear-gradient(180deg, #0b1728 0%, #07111f 100%);
-            border-right: 1px solid var(--border);
-        }}
-        section[data-testid="stSidebar"] [data-testid="stSidebarUserContent"] {{
-            padding: 1.1rem .95rem;
+            display: none;
         }}
         .title h1 {{
             margin: 0;
@@ -115,6 +111,31 @@ def inject_css() -> None:
         }}
         .good {{ color: var(--teal); }}
         .bad {{ color: var(--rose); }}
+        .filter-anchor {{
+            display: block;
+            width: 0;
+            height: 0;
+            overflow: hidden;
+        }}
+        .filter-brand {{
+            display: flex;
+            align-items: center;
+            margin-bottom: .75rem;
+            padding-bottom: .65rem;
+            border-bottom: 1px solid rgba(255,255,255,.07);
+        }}
+        .filter-title {{
+            color: #f7fbff;
+            font-size: 15px;
+            font-weight: 800;
+            line-height: 1.1;
+        }}
+        .filter-subtitle {{
+            color: var(--muted);
+            font-size: 11px;
+            margin-top: .18rem;
+            white-space: nowrap;
+        }}
         div[data-testid="stVerticalBlockBorderWrapper"] {{
             background: linear-gradient(145deg, rgba(18,32,51,.96), rgba(11,24,40,.96));
             border: 1px solid var(--border);
@@ -122,6 +143,28 @@ def inject_css() -> None:
             box-shadow: 0 16px 35px rgba(0,0,0,.20), inset 0 1px 0 rgba(255,255,255,.035);
         }}
         div[data-testid="stVerticalBlockBorderWrapper"] > div {{ padding: .72rem .82rem; }}
+        div[data-testid="stVerticalBlockBorderWrapper"]:has(.filter-anchor) {{
+            position: sticky;
+            top: 1rem;
+            z-index: 5;
+            max-height: calc(100vh - 2rem);
+            overflow-y: auto;
+            background: linear-gradient(180deg, rgba(15,28,45,.98), rgba(8,18,31,.98));
+        }}
+        div[data-testid="stVerticalBlockBorderWrapper"]:has(.filter-anchor) > div {{
+            padding: .62rem .86rem .9rem;
+        }}
+        div[data-testid="stVerticalBlockBorderWrapper"]:has(.filter-anchor) label,
+        div[data-testid="stVerticalBlockBorderWrapper"]:has(.filter-anchor) p {{
+            font-size: 12px;
+        }}
+        div[data-testid="stVerticalBlockBorderWrapper"]:has(.filter-anchor) [data-testid="stWidgetLabel"] p {{
+            color: #dbe7f8;
+            font-weight: 700;
+        }}
+        div[data-testid="stVerticalBlockBorderWrapper"]:has(.filter-anchor) div[data-testid="stVerticalBlock"] {{
+            gap: .55rem;
+        }}
         div[data-testid="stPlotlyChart"] {{ border-radius: 10px; overflow: hidden; }}
         div[data-baseweb="select"] > div,
         div[data-baseweb="input"] > div {{
@@ -173,6 +216,11 @@ def inject_css() -> None:
         @media (max-width: 1200px) {{
             .kpi-grid {{ grid-template-columns: repeat(3, minmax(0, 1fr)); }}
             .title h1 {{ font-size: 26px; }}
+            div[data-testid="stVerticalBlockBorderWrapper"]:has(.filter-anchor) {{
+                position: static;
+                max-height: none;
+                overflow: visible;
+            }}
         }}
         </style>
         """,

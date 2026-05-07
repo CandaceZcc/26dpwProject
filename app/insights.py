@@ -241,7 +241,7 @@ def render_insights(df: pd.DataFrame) -> None:
         '<div style="text-align:center;margin:0 0 1.5rem">'
         '<div style="font-size:28px;font-weight:900;color:#f7fbff;letter-spacing:-.02em;margin-bottom:.35rem">'
         "💡 Key Insights from the Data</div>"
-        '<div style="font-size:13px;color:#9aa9bd;">Statistical patterns and trends discovered across 45,000+ films</div>'
+        '<div style="font-size:13px;color:#9aa9bd;">Statistical patterns and trends discovered across 45,346 films</div>'
         "</div>",
         unsafe_allow_html=True,
     )

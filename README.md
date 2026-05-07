@@ -13,7 +13,7 @@
 - 使用 Plotly 绘制 5 个核心图表。
 - 使用自定义 CSS 尽量复刻 `GUI.png` 的深色卡片式 dashboard 效果。
 - 将 `rate.rating` 从 0.5-5 分制换算为 0-10 分制，用于 GUI 中的 Rating 图表。
-- 过滤器和视图切换已移入 Streamlit 原生 sidebar，主页面只展示标题、KPI 和图表。
+- 过滤器和视图切换使用页面内筛选面板，面板会在滚动时固定在左侧，不依赖 Streamlit 默认侧栏。
 
 ## 文件结构
 
@@ -29,7 +29,7 @@
 │   ├── data.py                 # 数据加载和筛选
 │   ├── metrics.py              # KPI 和类型表现计算
 │   ├── charts.py               # Plotly 图表
-│   ├── components.py           # Sidebar、KPI、图表卡片、导出、Bottom
+│   ├── components.py           # 筛选面板、KPI、图表卡片、导出、Bottom
 │   ├── predict.py              # 电影票房/ROI 预测模块（GradientBoosting）
 │   ├── insights.py             # 数据洞察分析面板
 │   └── styles.py               # 全局 CSS
@@ -43,7 +43,7 @@
 ├── IMDB_SDS_Draft.docx         # 系统设计文档草稿
 ├── ERmodel.pdf                 # ER 模型文档
 ├── ER关系.pdf                  # ER 关系文档
-└── movie_dashboard.html        # 早期 HTML 预览版本
+└── movie_dashboard.html        # 早期 HTML 预览版本，不是当前入口
 ```
 
 ## 如何运行主 Dashboard
@@ -193,7 +193,7 @@ http://localhost:8501
 ## Dashboard 功能
 
 - 顶部 KPI：Total Movies、Avg Revenue、Avg ROI、Avg Rating、Total Budget、Total Revenue。
-- Sidebar：视图切换、年份范围、电影类型、快捷年份范围、最低投票数、类型表现摘要和导出入口。
+- 筛选面板：视图切换、年份范围、电影类型、快捷年份范围、最低投票数、类型表现摘要和导出入口。
 - 图表：
   - Box Office Success Analysis：预算与收入关系。
   - Genre Profitability：不同类型的 ROI 或平均收入。
@@ -215,7 +215,7 @@ http://localhost:8501
   - 4 个关键 KPI 卡片：最高 ROI 类型、最佳上映月份、盈利率、长片 ROI。
   - 3 个数据图表：十年收入趋势、类型 ROI 排名、评分-收入分布、片长-ROI 关系。
   - 2 个文本发现：多类型策略分析、评分甜蜜点识别。
-  - 实时计算自 45,000+ 电影数据集的关键统计和趋势。
+  - 实时计算自 45,346 部电影数据集的关键统计和趋势。
 - 项目信息面板：
   - 项目概览、学校课程、数据源说明、GitHub 仓库链接。
   - 显示在 dashboard 底部，便于项目追溯和协作。
@@ -223,10 +223,10 @@ http://localhost:8501
 ## 代码结构说明
 
 - `streamlit_app.py`：应用入口，只负责页面编排。
-- `app/data.py`：读取 `data/processed_movies.csv`，并按 sidebar 条件筛选数据。
+- `app/data.py`：读取 `data/processed_movies.csv`，并按筛选面板条件筛选数据。
 - `app/metrics.py`：计算 KPI、金额格式、类型最佳/最差表现。
 - `app/charts.py`：生成 Plotly 图表。
-- `app/components.py`：渲染 sidebar、标题、KPI 卡片、图表卡片、导出、bottom 项目信息和 footer。
+- `app/components.py`：渲染筛选面板、标题、KPI 卡片、图表卡片、导出、bottom 项目信息和 footer。部分历史函数名仍保留 `sidebar`，但实际界面已经是页面内 filter panel。
 - `app/predict.py`：电影票房和 ROI 预测模块，基于 GradientBoosting 算法训练的三个预测模型。
 - `app/insights.py`：数据洞察分析面板，计算并展示 KPI、趋势图表和关键发现。
 - `app/styles.py`：注入 dashboard 深色主题 CSS。
@@ -247,7 +247,7 @@ http://localhost:8501
 - 继续完善 Revenue、Genres、Time 等视图的交互细节。
 - 补充 dashboard 截图，放入最终报告。
 - 检查 ER 图与 SQL 外键是否完全一致，并在报告中说明差异。
-- 根据老师要求决定是否保留早期 `movie_dashboard.html`。
+- 如需进一步减少混乱，可单独删除早期预览文件 `movie_dashboard.html`。
 - 如果后续需要数据库演示，可增加 MySQL 连接模式，但默认仍建议使用本地 CSV。
 
 ## 组员协作建议

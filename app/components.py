@@ -32,12 +32,51 @@ def keyed_select_index(key: str, options: list, default):
     return {} if key in st.session_state else {"index": options.index(default)}
 
 
+def resolve_sidebar_state(df: pd.DataFrame, min_year: int, max_year: int, all_genres: list[str]) -> SidebarState:
+    default_year_range = (min_year, max_year)
+    default_genres = all_genres[:8]
+
+    view = st.session_state.get("view_mode", DEFAULT_VIEW)
+    year_range = st.session_state.get("year_range", default_year_range)
+    selected_genres = st.session_state.get("genres", default_genres)
+    quick_range = st.session_state.get("quick_range", "All")
+    min_votes = st.session_state.get("min_votes", DEFAULT_MIN_VOTES)
+    metric_choice = st.session_state.get("metric_choice", "ROI")
+    top_n = st.session_state.get("top_n", 12)
+
+    if quick_range != "All":
+        span = int(quick_range.replace("Y", ""))
+        year_range = (max(min_year, max_year - span + 1), max_year)
+
+    return SidebarState(
+        view=view,
+        year_range=year_range,
+        selected_genres=selected_genres,
+        quick_range=quick_range,
+        min_votes=int(min_votes),
+        metric_choice=metric_choice,
+        top_n=int(top_n),
+    )
+
+
 def render_sidebar(df: pd.DataFrame, min_year: int, max_year: int, all_genres: list[str]) -> SidebarState:
     default_year_range = (min_year, max_year)
     default_genres = all_genres[:8]
 
-    with st.sidebar:
-        st.title("IMDB")
+    with st.container(border=True):
+        st.markdown(
+            """
+            <span class="filter-anchor"></span>
+            <div class="filter-brand">
+              <div>
+                <div class="filter-title">Filters</div>
+                <div class="filter-subtitle">Movie analytics controls</div>
+              </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
         view = st.radio(
             "View",
             VIEW_OPTIONS,
@@ -45,8 +84,6 @@ def render_sidebar(df: pd.DataFrame, min_year: int, max_year: int, all_genres: l
             **keyed_select_index("view_mode", VIEW_OPTIONS, DEFAULT_VIEW),
         )
 
-        st.divider()
-        st.subheader("Filters")
         year_range = st.slider(
             "Year Range",
             min_year,
@@ -127,7 +164,7 @@ def _apply_hdr_year() -> None:
 
 
 def render_header(year_range: tuple[int, int], min_year: int, max_year: int) -> None:
-    # Keep header slider in sync when sidebar changes the range
+    # Keep header slider in sync when the filter panel changes the range.
     if st.session_state.get("hdr_year_slider") != tuple(year_range):
         st.session_state["hdr_year_slider"] = tuple(year_range)
 
@@ -137,7 +174,7 @@ def render_header(year_range: tuple[int, int], min_year: int, max_year: int) -> 
             """
             <div class="title">
               <h1>IMDB Movie Analytics Dashboard</h1>
-              <p>Revenue, Genre, Release Timing and Rating Insights • Based on 4000+ movies dataset</p>
+              <p>Revenue, Genre, Release Timing and Rating Insights • Based on 45,346 movies dataset</p>
             </div>
             """,
             unsafe_allow_html=True,
@@ -310,13 +347,14 @@ def render_bottom() -> None:
                     <div class="bottom-title">📚 Project</div>
                     <div class="bottom-content">
                         <strong>IMDB Movie Analytics</strong><br>
-                        Interactive data visualization dashboard analyzing box office success, genre performance, and rating distributions from 45,000+ films.
+                        Interactive data visualization dashboard analyzing box office success, genre performance, and rating distributions from 45,346 films.
                     </div>
                 </div>
                 <div class="bottom-card">
                     <div class="bottom-title">🏫 Institution</div>
                     <div class="bottom-content">
                         <strong>26dpwProject</strong><br>
+                        <strong>Team:</strong> ZHOU Can, CHEN Ziming, DAI Ling, LIAO Shuaiyu, PAN Meihao, ZHU Junyu.<br>
                         Data science & visualization course combining database design, SQL, and Python Streamlit development for real-world analytics.
                     </div>
                 </div>
@@ -331,7 +369,7 @@ def render_bottom() -> None:
                     <div class="bottom-title">🔗 Repository</div>
                     <div class="bottom-content">
                         <strong>GitHub</strong><br>
-                        <a href="https://github.com/YukiOrange1209/26dpwProject" target="_blank">26dpwProject</a><br>
+                        <a href="https://github.com/CandaceZcc/26dpwProject" target="_blank">github.com/CandaceZcc/26dpwProject</a><br>
                         Contributions welcome. Issues & PRs monitored.
                     </div>
                 </div>
