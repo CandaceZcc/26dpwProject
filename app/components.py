@@ -231,6 +231,94 @@ def render_export(filtered: pd.DataFrame) -> None:
         )
 
 
+def render_bottom() -> None:
+    st.markdown(
+        """
+        <style>
+        .bottom-section {
+            background: linear-gradient(135deg, rgba(18,32,51,.7), rgba(11,22,38,.7));
+            border-top: 1px solid rgba(128,164,218,.15);
+            padding: 2rem 1.5rem;
+            margin-top: 2rem;
+            border-radius: 0;
+        }
+        .bottom-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2rem;
+            max-width: 1760px;
+            margin: 0 auto;
+        }
+        .bottom-card {
+            padding: 1.5rem;
+            background: rgba(0,0,0,.2);
+            border: 1px solid rgba(128,164,218,.1);
+            border-radius: 12px;
+        }
+        .bottom-title {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            color: #80a4da;
+            margin-bottom: 0.8rem;
+        }
+        .bottom-content {
+            font-size: 14px;
+            color: #dbe7f8;
+            line-height: 1.8;
+        }
+        .bottom-content a {
+            color: #5bb3ff;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .bottom-content a:hover {
+            color: #80d4ff;
+            text-decoration: underline;
+        }
+        .bottom-content strong {
+            color: #f7fbff;
+        }
+        </style>
+        <div class="bottom-section">
+            <div class="bottom-grid">
+                <div class="bottom-card">
+                    <div class="bottom-title">📚 Project</div>
+                    <div class="bottom-content">
+                        <strong>IMDB Movie Analytics</strong><br>
+                        Interactive data visualization dashboard analyzing box office success, genre performance, and rating distributions from 45,000+ films.
+                    </div>
+                </div>
+                <div class="bottom-card">
+                    <div class="bottom-title">🏫 Institution</div>
+                    <div class="bottom-content">
+                        <strong>26dpwProject</strong><br>
+                        Data science & visualization course combining database design, SQL, and Python Streamlit development for real-world analytics.
+                    </div>
+                </div>
+                <div class="bottom-card">
+                    <div class="bottom-title">📊 Data Source</div>
+                    <div class="bottom-content">
+                        <strong>TMDB Database</strong><br>
+                        45,346 films with budget, revenue, ratings, genres, and release timing. Processed locally into <code>processed_movies.csv</code> for analysis.
+                    </div>
+                </div>
+                <div class="bottom-card">
+                    <div class="bottom-title">🔗 Repository</div>
+                    <div class="bottom-content">
+                        <strong>GitHub</strong><br>
+                        <a href="https://github.com/YukiOrange1209/26dpwProject" target="_blank">26dpwProject</a><br>
+                        Contributions welcome. Issues & PRs monitored.
+                    </div>
+                </div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 def render_footer() -> None:
     st.markdown(
         f"""

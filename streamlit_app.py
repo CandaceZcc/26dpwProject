@@ -5,6 +5,7 @@ import streamlit as st
 from app.charts import genre_roi_chart, rating_box_chart, revenue_month_chart, scatter_with_trend
 from app.config import BLUE
 from app.components import (
+    render_bottom,
     render_chart_panel,
     render_export,
     render_footer,
@@ -16,6 +17,7 @@ from app.data import apply_filters, available_genres, load_data, previous_period
 from app.metrics import compute_kpis
 from app.styles import inject_css
 from app.predict import render_predict_view
+from app.insights import render_insights
 
 
 st.set_page_config(
@@ -158,6 +160,9 @@ def main() -> None:
     )
     st.divider()
     render_predict_view(df)
+    st.divider()
+    render_insights(df)
+    render_bottom()
     render_footer()
 
 

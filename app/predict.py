@@ -160,8 +160,9 @@ def render_predict_view(df: pd.DataFrame) -> None:
     from app.components import render_chart_panel
 
     st.markdown(
-        '<div class="panel-title" style="font-size:18px;margin-bottom:.6rem">'
-        "Movie Revenue & ROI Predictor</div>",
+        '<div style="font-size:28px;font-weight:900;color:#f7fbff;text-align:center;'
+        'margin:0 0 1.2rem;letter-spacing:-.02em;">'
+        "🎬 Movie Revenue &amp; ROI Predictor</div>",
         unsafe_allow_html=True,
     )
 
@@ -247,7 +248,7 @@ def render_predict_view(df: pd.DataFrame) -> None:
     with st.container(border=True):
         st.markdown('<div class="panel-title">Top 5 Comparable Films</div>', unsafe_allow_html=True)
         st.dataframe(_comparable_table(df, inputs["budget"], inputs["genre"]),
-                     use_container_width=True, hide_index=True, height=220)
+                     width="stretch", hide_index=True, height=220)
         st.markdown(
             '<div class="insight">Ranked by proximity to your input budget within the same genre.</div>',
             unsafe_allow_html=True,
