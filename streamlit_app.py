@@ -15,6 +15,7 @@ from app.components import (
 from app.data import apply_filters, available_genres, load_data, previous_period
 from app.metrics import compute_kpis
 from app.styles import inject_css
+from app.predict import render_predict_view
 
 
 st.set_page_config(
@@ -25,7 +26,7 @@ st.set_page_config(
 )
 
 
-def render_dashboard_view(view: str, filtered, metric_choice: str, top_n: int, corr: float, roi_corr: float, roi_cap) -> None:
+def render_dashboard_view(view: str, filtered, df, metric_choice: str, top_n: int, corr: float, roi_corr: float, roi_cap) -> None:
     if view == "Export":
         render_export(filtered)
         return
@@ -148,12 +149,15 @@ def main() -> None:
     render_dashboard_view(
         sidebar_state.view,
         filtered,
+        df,
         sidebar_state.metric_choice,
         sidebar_state.top_n,
         corr,
         roi_corr,
         roi_cap,
     )
+    st.divider()
+    render_predict_view(df)
     render_footer()
 
 
