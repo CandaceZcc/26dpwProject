@@ -21,6 +21,7 @@
 .
 ├── streamlit_app.py            # 主 Streamlit dashboard
 ├── requirements.txt            # 主项目 Python 依赖
+├── PREDICT_MODULE.md           # 预测模块完整文档
 ├── run_windows.bat             # Windows 一键安装并启动
 ├── run_unix.sh                 # macOS/Linux 一键安装并启动
 ├── app/
@@ -29,6 +30,7 @@
 │   ├── metrics.py              # KPI 和类型表现计算
 │   ├── charts.py               # Plotly 图表
 │   ├── components.py           # Sidebar、KPI、图表卡片和导出
+│   ├── predict.py              # 电影票房/ROI 预测模块（GradientBoosting）
 │   └── styles.py               # 全局 CSS
 ├── scripts/
 │   └── build_dataset.py        # 从 SQL 生成分析数据
@@ -203,6 +205,11 @@ http://localhost:8501
   - Genres：聚焦类型 ROI 和评分分布。
   - Time：聚焦上映月份与收入趋势。
   - Export：导出当前筛选后的 CSV 数据。
+- 预测模块：
+  - 基于历史电影数据训练的 GradientBoosting 模型。
+  - 输入电影参数（预算、类型、发行月份、片长）预测票房、ROI 和盈利概率。
+  - 展示可比影片散点图、ROI 分布和 Top 5 对标影片。
+  - 详见 [PREDICT_MODULE.md](./PREDICT_MODULE.md)。
 
 ## 代码结构说明
 
@@ -211,6 +218,7 @@ http://localhost:8501
 - `app/metrics.py`：计算 KPI、金额格式、类型最佳/最差表现。
 - `app/charts.py`：生成 Plotly 图表。
 - `app/components.py`：渲染 sidebar、标题、KPI 卡片、图表卡片、导出和 footer。
+- `app/predict.py`：电影票房和 ROI 预测模块，基于 GradientBoosting 算法训练的三个预测模型。
 - `app/styles.py`：注入 dashboard 深色主题 CSS。
 
 ## 可行性与正确性检查
