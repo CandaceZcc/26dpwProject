@@ -238,13 +238,16 @@ def render_insights(df: pd.DataFrame) -> None:
 
     st.markdown(_CSS, unsafe_allow_html=True)
     st.markdown(
-        '<div style="font-size:28px;font-weight:900;color:#f7fbff;text-align:center;'
-        'margin:0 0 1.5rem;letter-spacing:-.02em;">💡 Key Insights from the Data</div>',
+        '<div style="text-align:center;margin:0 0 1.5rem">'
+        '<div style="font-size:28px;font-weight:900;color:#f7fbff;letter-spacing:-.02em;margin-bottom:.35rem">'
+        "💡 Key Insights from the Data</div>"
+        '<div style="font-size:13px;color:#9aa9bd;">Statistical patterns and trends discovered across 45,000+ films</div>'
+        "</div>",
         unsafe_allow_html=True,
     )
 
     # Row 1 — 4 highlight cards
-    st.html(
+    st.markdown(
         '<div class="ins-cards">'
         + _card("🏆", "Highest ROI Genre",
                 f"{ins['top_genre']}  {ins['top_genre_roi']:.2f}x",
@@ -267,7 +270,8 @@ def render_insights(df: pd.DataFrame) -> None:
                 "Films over 150 min post the highest median ROI — "
                 "audiences reward ambitious, epic-scale productions.",
                 PURPLE)
-        + "</div>"
+        + "</div>",
+        unsafe_allow_html=True,
     )
 
     # Row 2 — 3 charts
@@ -316,7 +320,7 @@ def render_insights(df: pd.DataFrame) -> None:
                 unsafe_allow_html=True,
             )
     with mid:
-        st.html(
+        st.markdown(
             _finding(
                 "🎭  Multi-Genre Strategy",
                 f"<strong>{ins['multi_pct']:.0f}%</strong> of films span two or more genres. "
@@ -324,10 +328,11 @@ def render_insights(df: pd.DataFrame) -> None:
                 "The most common pairings are <strong>Comedy + Drama</strong> and "
                 "<strong>Drama + Romance</strong>, both of which combine broad appeal with "
                 "lower production costs.",
-            )
+            ),
+            unsafe_allow_html=True,
         )
     with right:
-        st.html(
+        st.markdown(
             _finding(
                 "⭐  The Rating Sweet Spot",
                 f"Films rated <strong>6 – 7</strong> earn the highest average box office "
@@ -335,11 +340,12 @@ def render_insights(df: pd.DataFrame) -> None:
                 "outperforming even 8+ critically acclaimed films. "
                 "Mass-market entertainment that satisfies without polarising audiences "
                 "consistently captures the widest theatrical audience.",
-            )
+            ),
+            unsafe_allow_html=True,
         )
 
     # Summary strip
-    st.html(
+    st.markdown(
         f"""<div class="ins-summary">
         Based on <strong>{ins['total']:,} films</strong> with verified budget and revenue data. &nbsp;·&nbsp;
         <strong>{ins['top_genre']}</strong> leads all genres at <strong>{ins['top_genre_roi']:.2f}x</strong> median ROI. &nbsp;·&nbsp;
@@ -347,5 +353,6 @@ def render_insights(df: pd.DataFrame) -> None:
         <strong>{money(ins['best_month_rev'])}</strong> average. &nbsp;·&nbsp;
         <strong>{ins['profit_rate']:.1f}%</strong> of films recoup their budget —
         and higher-rated films are measurably more likely to do so.
-        </div>"""
+        </div>""",
+        unsafe_allow_html=True,
     )

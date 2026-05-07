@@ -160,9 +160,11 @@ def render_predict_view(df: pd.DataFrame) -> None:
     from app.components import render_chart_panel
 
     st.markdown(
-        '<div style="font-size:28px;font-weight:900;color:#f7fbff;text-align:center;'
-        'margin:0 0 1.2rem;letter-spacing:-.02em;">'
-        "🎬 Movie Revenue &amp; ROI Predictor</div>",
+        '<div style="text-align:center;margin:0 0 1.4rem">'
+        '<div style="font-size:28px;font-weight:900;color:#f7fbff;letter-spacing:-.02em;margin-bottom:.35rem">'
+        "🎬 Movie Revenue &amp; ROI Predictor</div>"
+        '<div style="font-size:13px;color:#9aa9bd;">Input your film parameters to get an AI-powered box office forecast</div>'
+        "</div>",
         unsafe_allow_html=True,
     )
 
@@ -222,13 +224,14 @@ def render_predict_view(df: pd.DataFrame) -> None:
     prob_color = GREEN if profit_prob >= 0.6 else (AMBER if profit_prob >= 0.4 else ROSE)
     roi_color = GREEN if pred_roi >= 2.0 else (AMBER if pred_roi >= 1.0 else ROSE)
 
-    st.html(
+    st.markdown(
         '<div class="kpi-grid" style="grid-template-columns:repeat(3,minmax(180px,1fr));margin:.5rem 0 .8rem">'
         + _pred_kpi("Predicted Revenue", money(pred_revenue),
                     f"Range: {money(result['lower_revenue'])} – {money(result['upper_revenue'])}", TEAL)
         + _pred_kpi("Predicted ROI", f"{pred_roi:.2f}x", f"Input budget: {money(inputs['budget'])}", roi_color)
         + _pred_kpi("Profit Probability", f"{profit_prob * 100:.1f}%", "P(revenue > budget)", prob_color)
-        + "</div>"
+        + "</div>",
+        unsafe_allow_html=True,
     )
 
     left, right = st.columns([0.55, 0.45], gap="medium")

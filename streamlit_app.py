@@ -13,7 +13,7 @@ from app.components import (
     render_kpi_grid,
     render_sidebar,
 )
-from app.data import apply_filters, available_genres, load_data, previous_period
+from app.data import apply_filters, available_genres, load_data
 from app.metrics import compute_kpis
 from app.styles import inject_css
 from app.predict import render_predict_view
@@ -128,13 +128,6 @@ def main() -> None:
         sidebar_state.selected_genres,
         sidebar_state.min_votes,
     )
-    previous = previous_period(
-        df,
-        sidebar_state.year_range,
-        sidebar_state.selected_genres,
-        sidebar_state.min_votes,
-    )
-
     corr_df = filtered[["budget", "revenue"]].dropna()
     corr_df = corr_df[(corr_df["budget"] > 0) & (corr_df["revenue"] > 0)]
     corr = corr_df["budget"].corr(corr_df["revenue"]) if len(corr_df) > 2 else 0
@@ -146,8 +139,8 @@ def main() -> None:
         roi_corr_df = roi_corr_df[roi_corr_df["roi"] <= roi_cap]
     roi_corr = roi_corr_df["budget"].corr(roi_corr_df["roi"]) if len(roi_corr_df) > 2 else 0
 
-    render_header(sidebar_state.year_range)
-    render_kpi_grid(compute_kpis(filtered, previous))
+    render_header(sidebar_state.year_range, min_year, max_year)
+    render_kpi_grid(compute_kpis(filtered))
     render_dashboard_view(
         sidebar_state.view,
         filtered,

@@ -35,14 +35,11 @@ def metric_delta(current: float, previous: float, suffix: str = "%") -> tuple[st
     return f"{delta:+.1f}{suffix}", "pos" if delta >= 0 else "neg"
 
 
-def compute_kpis(filtered: pd.DataFrame, previous: pd.DataFrame) -> list[dict]:
+def compute_kpis(filtered: pd.DataFrame) -> list[dict]:
     valid_revenue = filtered[filtered["revenue"] > 0]
     valid_budget = filtered[filtered["budget"] > 0]
     valid_roi = filtered.dropna(subset=["roi"])
     valid_rating = filtered.dropna(subset=["avg_rating"])
-    prev_revenue = previous[previous["revenue"] > 0]
-    prev_roi = previous.dropna(subset=["roi"])
-    prev_rating = previous.dropna(subset=["avg_rating"])
 
     by_year = filtered.groupby("year", as_index=False).agg(
         movies=("movie_id", "count"),
@@ -52,64 +49,78 @@ def compute_kpis(filtered: pd.DataFrame, previous: pd.DataFrame) -> list[dict]:
         budget=("budget", lambda values: values[values > 0].sum()),
     )
 
-    values = [
-        ("Total Movies", compact_number(len(filtered)), len(filtered), len(previous), BLUE, by_year["movies"].tolist()),
-        (
-            "Avg Revenue",
-            money(valid_revenue["revenue"].mean()),
-            valid_revenue["revenue"].mean(),
-            prev_revenue["revenue"].mean(),
-            TEAL,
-            by_year["revenue"].tolist(),
-        ),
-        (
-            "Avg ROI",
-            f"{valid_roi['roi'].median():.1f}x" if not valid_roi.empty else "0.0x",
-            valid_roi["roi"].median() if not valid_roi.empty else 0,
-            prev_roi["roi"].median() if not prev_roi.empty else 0,
-            PURPLE,
-            by_year["roi"].tolist(),
-        ),
-        (
-            "Avg Rating",
-            f"{valid_rating['avg_rating'].mean():.1f}" if not valid_rating.empty else "0.0",
-            valid_rating["avg_rating"].mean() if not valid_rating.empty else 0,
-            prev_rating["avg_rating"].mean() if not prev_rating.empty else 0,
-            AMBER,
-            by_year["rating"].tolist(),
-        ),
-        (
-            "Total Budget",
-            money(valid_budget["budget"].sum()),
-            valid_budget["budget"].sum(),
-            previous[previous["budget"] > 0]["budget"].sum(),
-            "#94a3b8",
-            by_year["budget"].tolist(),
-        ),
-        (
-            "Total Revenue",
-            money(valid_revenue["revenue"].sum()),
-            valid_revenue["revenue"].sum(),
-            prev_revenue["revenue"].sum(),
-            GREEN,
-            by_year["revenue"].tolist(),
-        ),
-    ]
+    # Meaningful per-KPI subtitles
+    profitable_pct = (
+        (valid_roi["roi"] > 1).sum() / len(valid_roi) * 100
+        if not valid_roi.empty else 0
+    )
+    avg_budget_per_film = (
+        valid_budget["budget"].mean() if not valid_budget.empty else 0
+    )
+    avg_rev_per_film = (
+        valid_revenue["revenue"].mean() if not valid_revenue.empty else 0
+    )
+    high_rating_pct = (
+        (valid_rating["avg_rating"] >= 7).sum() / len(valid_rating) * 100
+        if not valid_rating.empty else 0
+    )
+    roi_gt2_pct = (
+        (valid_roi["roi"] >= 2).sum() / len(valid_roi) * 100
+        if not valid_roi.empty else 0
+    )
+    rev_median = valid_revenue["revenue"].median() if not valid_revenue.empty else 0
 
-    result = []
-    for label, display, current, prev, accent, series in values:
-        change, tone = metric_delta(current, prev)
-        result.append(
-            {
-                "label": label,
-                "display": display,
-                "change": change,
-                "tone": tone,
-                "accent": accent,
-                "series": series,
-            }
-        )
-    return result
+    kpi_meta = [
+        {
+            "label": "Total Movies",
+            "display": compact_number(len(filtered)),
+            "change": f"{profitable_pct:.1f}% profitable",
+            "tone": "pos" if profitable_pct >= 50 else "neg",
+            "accent": BLUE,
+            "series": by_year["movies"].tolist(),
+        },
+        {
+            "label": "Avg Revenue",
+            "display": money(avg_rev_per_film),
+            "change": f"median {money(rev_median)}",
+            "tone": "neu",
+            "accent": TEAL,
+            "series": by_year["revenue"].tolist(),
+        },
+        {
+            "label": "Avg ROI",
+            "display": f"{valid_roi['roi'].median():.1f}x" if not valid_roi.empty else "0.0x",
+            "change": f"{roi_gt2_pct:.1f}% exceed 2x",
+            "tone": "pos" if roi_gt2_pct >= 30 else "neu",
+            "accent": PURPLE,
+            "series": by_year["roi"].tolist(),
+        },
+        {
+            "label": "Avg Rating",
+            "display": f"{valid_rating['avg_rating'].mean():.1f}" if not valid_rating.empty else "0.0",
+            "change": f"{high_rating_pct:.1f}% rated 7+",
+            "tone": "pos" if high_rating_pct >= 30 else "neu",
+            "accent": AMBER,
+            "series": by_year["rating"].tolist(),
+        },
+        {
+            "label": "Total Budget",
+            "display": money(valid_budget["budget"].sum()),
+            "change": f"avg {money(avg_budget_per_film)} / film",
+            "tone": "neu",
+            "accent": "#94a3b8",
+            "series": by_year["budget"].tolist(),
+        },
+        {
+            "label": "Total Revenue",
+            "display": money(valid_revenue["revenue"].sum()),
+            "change": f"avg {money(avg_rev_per_film)} / film",
+            "tone": "pos" if avg_rev_per_film > avg_budget_per_film else "neg",
+            "accent": GREEN,
+            "series": by_year["revenue"].tolist(),
+        },
+    ]
+    return kpi_meta
 
 
 def best_worst_genre(filtered: pd.DataFrame) -> tuple[str, str]:

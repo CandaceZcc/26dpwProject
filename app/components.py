@@ -121,7 +121,16 @@ def render_sidebar(df: pd.DataFrame, min_year: int, max_year: int, all_genres: l
     )
 
 
-def render_header(year_range: tuple[int, int]) -> None:
+def _apply_hdr_year() -> None:
+    st.session_state["year_range"] = st.session_state["hdr_year_slider"]
+    st.session_state["quick_range"] = "All"
+
+
+def render_header(year_range: tuple[int, int], min_year: int, max_year: int) -> None:
+    # Keep header slider in sync when sidebar changes the range
+    if st.session_state.get("hdr_year_slider") != tuple(year_range):
+        st.session_state["hdr_year_slider"] = tuple(year_range)
+
     left, right = st.columns([1, 0.28])
     with left:
         st.markdown(
@@ -134,10 +143,24 @@ def render_header(year_range: tuple[int, int]) -> None:
             unsafe_allow_html=True,
         )
     with right:
-        st.markdown(
-            f'<div class="pill">Calendar&nbsp; {year_range[0]} - {year_range[1]}</div>',
-            unsafe_allow_html=True,
-        )
+        with st.popover(
+            f"📅  {year_range[0]} – {year_range[1]}",
+            use_container_width=True,
+        ):
+            st.markdown(
+                '<div style="font-size:12px;font-weight:700;color:#9aa9bd;'
+                'text-transform:uppercase;letter-spacing:.06em;margin-bottom:.4rem">'
+                "Year Range</div>",
+                unsafe_allow_html=True,
+            )
+            st.slider(
+                "Year Range",
+                min_value=min_year,
+                max_value=max_year,
+                key="hdr_year_slider",
+                on_change=_apply_hdr_year,
+                label_visibility="collapsed",
+            )
 
 
 def sparkline_svg(values: list[float], color: str) -> str:
@@ -237,10 +260,10 @@ def render_bottom() -> None:
         <style>
         .bottom-section {
             background: linear-gradient(135deg, rgba(18,32,51,.7), rgba(11,22,38,.7));
-            border-top: 1px solid rgba(128,164,218,.15);
-            padding: 2rem 1.5rem;
-            margin-top: 2rem;
-            border-radius: 0;
+            border: 1px solid rgba(128,164,218,.15);
+            padding: 1.8rem 1.5rem;
+            margin-top: 1rem;
+            border-radius: 12px;
         }
         .bottom-grid {
             display: grid;

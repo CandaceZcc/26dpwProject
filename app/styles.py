@@ -145,6 +145,31 @@ def inject_css() -> None:
             border: 1px solid var(--border);
             border-radius: 10px;
         }}
+        /* Header calendar popover button — dark pill style */
+        div[data-testid="stPopover"] {{
+            width: 100%;
+        }}
+        div[data-testid="stPopover"] > div > button {{
+            width: 100% !important;
+            min-height: 42px !important;
+            background: rgba(18,32,51,.86) !important;
+            border: 1px solid rgba(128,164,218,.18) !important;
+            border-radius: 10px !important;
+            color: #e9f2ff !important;
+            font-size: 14px !important;
+            font-weight: 600 !important;
+            padding: 0 1rem !important;
+            justify-content: center !important;
+        }}
+        div[data-testid="stPopover"] > div > button:hover {{
+            background: rgba(24,42,68,.98) !important;
+            border-color: rgba(128,164,218,.38) !important;
+        }}
+        div[data-testid="stPopover"] > div > button p {{
+            color: #e9f2ff !important;
+            font-size: 14px !important;
+            font-weight: 600 !important;
+        }}
         @media (max-width: 1200px) {{
             .kpi-grid {{ grid-template-columns: repeat(3, minmax(0, 1fr)); }}
             .title h1 {{ font-size: 26px; }}
