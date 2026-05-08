@@ -5,6 +5,9 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 from sklearn.ensemble import GradientBoostingClassifier, GradientBoostingRegressor
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OrdinalEncoder
 
 from app.charts import chart_layout, empty_chart
@@ -251,8 +254,167 @@ def render_predict_view(df: pd.DataFrame) -> None:
     with st.container(border=True):
         st.markdown('<div class="panel-title">Top 5 Comparable Films</div>', unsafe_allow_html=True)
         st.dataframe(_comparable_table(df, inputs["budget"], inputs["genre"]),
-                     width="stretch", hide_index=True, height=220)
+                     use_container_width=True, hide_index=True, height=220)
         st.markdown(
             '<div class="insight">Ranked by proximity to your input budget within the same genre.</div>',
             unsafe_allow_html=True,
         )
+
+
+# ── Linear Regression Analysis ────────────────────────────────────────────────
+
+_REG_COLS = {
+    "Year": "year",
+    "Budget (USD)": "budget",
+    "Revenue (USD)": "revenue",
+    "ROI (x)": "roi",
+    "Runtime (min)": "runtime",
+    "Release Month": "release_month",
+    "Avg Rating": "avg_rating",
+    "Vote Count": "analysis_vote_count",
+}
+
+
+def _linear_regression(
+    df: pd.DataFrame,
+    x_col: str,
+    y_col: str,
+    year_range: tuple[int, int],
+    min_votes: int,
+) -> dict:
+    data = df.copy()
+    data = data[(data["year"] >= year_range[0]) & (data["year"] <= year_range[1])]
+    data = data[data["analysis_vote_count"].fillna(0) >= min_votes]
+    data = data[[x_col, y_col]].dropna()
+
+    if len(data) < 10:
+        return {"error": f"Not enough data points ({len(data)}) after filtering. Try relaxing the filters."}
+
+    X = data[[x_col]].values
+    y = data[y_col].values
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+    model = LinearRegression().fit(X_train, y_train)
+    y_pred_all = model.predict(X)
+
+    return {
+        "coefficient": float(model.coef_[0]),
+        "intercept": float(model.intercept_),
+        "r2_train": float(r2_score(y_train, model.predict(X_train))),
+        "r2_test": float(r2_score(y_test, model.predict(X_test))),
+        "r2_all": float(r2_score(y, y_pred_all)),
+        "n_samples": len(data),
+        "x_values": X.flatten().tolist(),
+        "y_actual": y.tolist(),
+        "y_predicted": y_pred_all.tolist(),
+    }
+
+
+def _regression_chart(result: dict, x_label: str, y_label: str) -> go.Figure:
+    x_vals = np.array(result["x_values"])
+    y_actual = np.array(result["y_actual"])
+    x_sorted = np.sort(x_vals)
+    y_line = result["coefficient"] * x_sorted + result["intercept"]
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=x_vals, y=y_actual,
+        mode="markers", name="Actual Data",
+        marker=dict(size=5, color=BLUE, opacity=0.45, line=dict(width=0)),
+        hovertemplate=f"{x_label}: %{{x:,.2f}}<br>{y_label}: %{{y:,.2f}}<extra></extra>",
+    ))
+    fig.add_trace(go.Scatter(
+        x=x_sorted, y=y_line,
+        mode="lines", name="Regression Line",
+        line=dict(color=AMBER, width=2.5),
+        hovertemplate=f"Predicted {y_label}: %{{y:,.2f}}<extra></extra>",
+    ))
+    fig.update_layout(**chart_layout(340))
+    fig.update_xaxes(title=x_label)
+    fig.update_yaxes(title=y_label)
+    return fig
+
+
+def render_regression_view(df: pd.DataFrame) -> None:
+    from app.components import render_chart_panel
+
+    st.markdown(
+        '<div style="text-align:center;margin:0 0 1.4rem">'
+        '<div style="font-size:28px;font-weight:900;color:#f7fbff;letter-spacing:-.02em;margin-bottom:.35rem">'
+        "📈 Linear Regression Analysis</div>"
+        '<div style="font-size:13px;color:#9aa9bd;">Explore linear relationships between movie attributes</div>'
+        "</div>",
+        unsafe_allow_html=True,
+    )
+
+    col_labels = list(_REG_COLS.keys())
+    min_year = int(df["year"].min())
+    max_year = int(df["year"].max())
+
+    with st.container(border=True):
+        st.markdown('<div class="panel-title">Regression Parameters</div>', unsafe_allow_html=True)
+        c1, c2, c3, c4 = st.columns(4, gap="medium")
+        with c1:
+            x_label = st.selectbox("X Variable (Independent)", col_labels, index=0, key="reg_x")
+        with c2:
+            y_options = [k for k in col_labels if k != x_label]
+            y_label = st.selectbox("Y Variable (Dependent)", y_options, index=1, key="reg_y")
+        with c3:
+            year_range = st.slider("Year Range", min_year, max_year, (min_year, max_year), key="reg_year")
+        with c4:
+            min_votes = st.number_input("Min Votes", min_value=0, max_value=1000, value=50, step=50, key="reg_votes")
+        run_btn = st.button("Run Regression", type="primary", width="stretch", key="reg_btn")
+
+    if not run_btn and "reg_result" not in st.session_state:
+        st.markdown(
+            '<div class="insight">Select X and Y variables above and click '
+            "<strong>Run Regression</strong> to analyze the relationship.</div>",
+            unsafe_allow_html=True,
+        )
+        return
+
+    if run_btn:
+        x_col = _REG_COLS[x_label]
+        y_col = _REG_COLS[y_label]
+        if x_col == y_col:
+            st.warning("X and Y must be different variables.")
+            return
+        result = _linear_regression(df, x_col, y_col, year_range, min_votes)
+        st.session_state["reg_result"] = result
+        st.session_state["reg_labels"] = {"x": x_label, "y": y_label}
+
+    result = st.session_state["reg_result"]
+    labels = st.session_state["reg_labels"]
+
+    if "error" in result:
+        st.error(result["error"])
+        return
+
+    r2 = result["r2_all"]
+    r2_color = GREEN if r2 >= 0.5 else (AMBER if r2 >= 0.2 else ROSE)
+
+    st.markdown(
+        '<div class="kpi-grid" style="grid-template-columns:repeat(3,minmax(180px,1fr));margin:.5rem 0 .8rem">'
+        + _pred_kpi("Slope", f"{result['coefficient']:.4f}",
+                    f"Δ{labels['y']} per unit {labels['x']}", TEAL)
+        + _pred_kpi("Intercept", f"{result['intercept']:.2f}",
+                    f"Baseline when {labels['x']} = 0", BLUE)
+        + _pred_kpi("R² Score", f"{r2:.3f}",
+                    f"Based on {result['n_samples']:,} films", r2_color)
+        + "</div>",
+        unsafe_allow_html=True,
+    )
+
+    st.markdown(
+        f'<div class="insight" style="margin-bottom:.8rem">'
+        f'Equation: <strong>{labels["y"]} = {result["coefficient"]:.4f} × {labels["x"]} '
+        f'+ {result["intercept"]:.2f}</strong></div>',
+        unsafe_allow_html=True,
+    )
+
+    render_chart_panel(
+        f"{labels['x']} vs {labels['y']} — Linear Regression",
+        _regression_chart(result, labels["x"], labels["y"]),
+        f"R² = {r2:.3f}  ·  Train R²: {result['r2_train']:.3f}  ·  "
+        f"Test R²: {result['r2_test']:.3f}  ·  n = {result['n_samples']:,} films",
+    )

@@ -17,7 +17,7 @@ from app.components import (
 from app.data import apply_filters, available_genres, load_data
 from app.metrics import compute_kpis
 from app.styles import inject_css
-from app.predict import render_predict_view
+from app.predict import render_predict_view, render_regression_view
 from app.insights import render_insights
 
 
@@ -156,6 +156,8 @@ def main() -> None:
             roi_corr,
             roi_cap,
         )
+    st.divider()
+    render_regression_view(df)
     st.divider()
     render_predict_view(df)
     st.divider()
