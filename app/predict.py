@@ -371,50 +371,52 @@ def render_regression_view(df: pd.DataFrame) -> None:
             "<strong>Run Regression</strong> to analyze the relationship.</div>",
             unsafe_allow_html=True,
         )
-        return
+    else:
+        if run_btn:
+            x_col = _REG_COLS[x_label]
+            y_col = _REG_COLS[y_label]
+            if x_col == y_col:
+                st.warning("X and Y must be different variables.")
+            else:
+                result = _linear_regression(df, x_col, y_col, year_range, min_votes)
+                st.session_state["reg_result"] = result
+                st.session_state["reg_labels"] = {"x": x_label, "y": y_label}
 
-    if run_btn:
-        x_col = _REG_COLS[x_label]
-        y_col = _REG_COLS[y_label]
-        if x_col == y_col:
-            st.warning("X and Y must be different variables.")
-            return
-        result = _linear_regression(df, x_col, y_col, year_range, min_votes)
-        st.session_state["reg_result"] = result
-        st.session_state["reg_labels"] = {"x": x_label, "y": y_label}
+        if "reg_result" in st.session_state:
+            result = st.session_state["reg_result"]
+            labels = st.session_state["reg_labels"]
 
-    result = st.session_state["reg_result"]
-    labels = st.session_state["reg_labels"]
+            if "error" in result:
+                st.error(result["error"])
+            else:
+                r2 = result["r2_all"]
+                r2_color = GREEN if r2 >= 0.5 else (AMBER if r2 >= 0.2 else ROSE)
 
-    if "error" in result:
-        st.error(result["error"])
-        return
+                st.markdown(
+                    '<div class="kpi-grid" style="grid-template-columns:repeat(3,minmax(180px,1fr));margin:.5rem 0 .8rem">'
+                    + _pred_kpi("Slope", f"{result['coefficient']:.4f}",
+                                f"Δ{labels['y']} per unit {labels['x']}", TEAL)
+                    + _pred_kpi("Intercept", f"{result['intercept']:.2f}",
+                                f"Baseline when {labels['x']} = 0", BLUE)
+                    + _pred_kpi("R² Score", f"{r2:.3f}",
+                                f"Based on {result['n_samples']:,} films", r2_color)
+                    + "</div>",
+                    unsafe_allow_html=True,
+                )
 
-    r2 = result["r2_all"]
-    r2_color = GREEN if r2 >= 0.5 else (AMBER if r2 >= 0.2 else ROSE)
+                st.markdown(
+                    f'<div class="insight" style="margin-bottom:.8rem">'
+                    f'Equation: <strong>{labels["y"]} = {result["coefficient"]:.4f} × {labels["x"]} '
+                    f'+ {result["intercept"]:.2f}</strong></div>',
+                    unsafe_allow_html=True,
+                )
 
-    st.markdown(
-        '<div class="kpi-grid" style="grid-template-columns:repeat(3,minmax(180px,1fr));margin:.5rem 0 .8rem">'
-        + _pred_kpi("Slope", f"{result['coefficient']:.4f}",
-                    f"Δ{labels['y']} per unit {labels['x']}", TEAL)
-        + _pred_kpi("Intercept", f"{result['intercept']:.2f}",
-                    f"Baseline when {labels['x']} = 0", BLUE)
-        + _pred_kpi("R² Score", f"{r2:.3f}",
-                    f"Based on {result['n_samples']:,} films", r2_color)
-        + "</div>",
-        unsafe_allow_html=True,
-    )
+                render_chart_panel(
+                    f"{labels['x']} vs {labels['y']} — Linear Regression",
+                    _regression_chart(result, labels["x"], labels["y"]),
+                    f"R² = {r2:.3f}  ·  Train R²: {result['r2_train']:.3f}  ·  "
+                    f"Test R²: {result['r2_test']:.3f}  ·  n = {result['n_samples']:,} films",
+                )
 
-    st.markdown(
-        f'<div class="insight" style="margin-bottom:.8rem">'
-        f'Equation: <strong>{labels["y"]} = {result["coefficient"]:.4f} × {labels["x"]} '
-        f'+ {result["intercept"]:.2f}</strong></div>',
-        unsafe_allow_html=True,
-    )
-
-    render_chart_panel(
-        f"{labels['x']} vs {labels['y']} — Linear Regression",
-        _regression_chart(result, labels["x"], labels["y"]),
-        f"R² = {r2:.3f}  ·  Train R²: {result['r2_train']:.3f}  ·  "
-        f"Test R²: {result['r2_test']:.3f}  ·  n = {result['n_samples']:,} films",
-    )
+    st.divider()
+    render_predict_view(df)
