@@ -123,8 +123,10 @@ def compute_kpis(filtered: pd.DataFrame) -> list[dict]:
     return kpi_meta
 
 
-def best_worst_genre(filtered: pd.DataFrame) -> tuple[str, str]:
+def best_worst_genre(filtered: pd.DataFrame, allowed_genres: list[str] | None = None) -> tuple[str, str]:
     genre_df = explode_genres(filtered.dropna(subset=["roi"]))
+    if allowed_genres is not None:
+        genre_df = genre_df[genre_df["genre"].isin(allowed_genres)]
     if genre_df.empty:
         return "N/A", "N/A"
     grouped = genre_df.groupby("genre")["roi"].median().sort_values(ascending=False)

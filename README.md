@@ -205,6 +205,9 @@ http://localhost:8501
   - Revenue：聚焦收入、预算和 ROI 相关分析。
   - Genres：聚焦类型 ROI 和评分分布。
   - Time：聚焦上映月份与收入趋势。
+  - Chi-Square：进行类型、预算、档期、评分等分类变量的独立性检验。
+  - Insights：展示关键数据洞察、趋势图表和文本发现。
+  - Regression：分析电影属性之间的线性关系。
   - Export：导出当前筛选后的 CSV 数据。
 - 预测模块：
   - 基于历史电影数据训练的 GradientBoosting 模型。
@@ -227,7 +230,8 @@ http://localhost:8501
 - `app/metrics.py`：计算 KPI、金额格式、类型最佳/最差表现。
 - `app/charts.py`：生成 Plotly 图表。
 - `app/components.py`：渲染筛选面板、标题、KPI 卡片、图表卡片、导出、bottom 项目信息和 footer。部分历史函数名仍保留 `sidebar`，但实际界面已经是页面内 filter panel。
-- `app/predict.py`：电影票房和 ROI 预测模块，基于 GradientBoosting 算法训练的三个预测模型。
+- `app/predict.py`：电影票房和 ROI 预测模块，以及线性回归分析视图。
+- `app/chi_square.py`：卡方独立性检验视图，用于分析分类变量关联。
 - `app/insights.py`：数据洞察分析面板，计算并展示 KPI、趋势图表和关键发现。
 - `app/styles.py`：注入 dashboard 深色主题 CSS。
 
@@ -239,20 +243,3 @@ http://localhost:8501
 - `rate.rating` 原始范围是 0.5-5，dashboard 中已换算为 0-10，便于匹配 SDS/GUI 的评分设计。
 - ROI 计算规则为 `revenue / budget`。预算或收入为 0 的电影不会参与 ROI 相关图表和 Avg ROI。
 - 现有数据中存在极端 ROI 值，图表展示时会对 Budget vs ROI 做 98 分位视觉截尾，避免坐标轴被异常值拉伸。
-
-## 接下来的 TODO
-
-- 继续微调 CSS，让 Streamlit 页面更接近 `GUI.png` 的像素效果，尤其是不同浏览器缩放比例下的细节。
-- 增加 KPI sparkline 的真实历史趋势解释。
-- 继续完善 Revenue、Genres、Time 等视图的交互细节。
-- 补充 dashboard 截图，放入最终报告。
-- 检查 ER 图与 SQL 外键是否完全一致，并在报告中说明差异。
-- 如需进一步减少混乱，可单独删除早期预览文件 `movie_dashboard.html`。
-- 如果后续需要数据库演示，可增加 MySQL 连接模式，但默认仍建议使用本地 CSV。
-
-## 组员协作建议
-
-- 数据库同学：检查 `tmdb.sql/` 和 ER 图的一致性，补充数据导入说明。
-- 前端/可视化同学：继续对照 `GUI.png` 调整 Streamlit 页面效果。
-- 文档同学：把 README 中的可行性说明整理进最终报告。
-- 测试同学：按运行步骤在不同电脑上验证 dashboard 能否正常启动。

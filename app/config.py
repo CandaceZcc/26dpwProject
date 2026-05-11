@@ -37,7 +37,7 @@ CORE_GENRES = [
     "Mystery",
 ]
 
-VIEW_OPTIONS = ["Overview", "Revenue", "Genres", "Time", "Export"]
+VIEW_OPTIONS = ["Overview", "Revenue", "Genres", "Time", "Chi-Square", "Insights", "Regression", "Export"]
 DEFAULT_VIEW = "Overview"
 DEFAULT_MIN_VOTES = 1000
 

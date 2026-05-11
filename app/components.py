@@ -117,7 +117,7 @@ def render_sidebar(df: pd.DataFrame, min_year: int, max_year: int, all_genres: l
         )
 
         preview = apply_filters(df, year_range, selected_genres, min_votes)
-        best, worst = best_worst_genre(preview)
+        best, worst = best_worst_genre(preview, selected_genres)
         st.markdown(
             f"""
             <div class="small-stat"><span>Best Genre</span><strong class="good">{best}</strong></div>

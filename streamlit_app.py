@@ -11,12 +11,14 @@ from app.components import (
     render_header,
     render_kpi_grid,
     render_sidebar,
+    resolve_sidebar_state,
 )
-from app.data import apply_filters, available_genres, load_data, previous_period
+from app.data import apply_filters, available_genres, load_data
 from app.metrics import compute_kpis
 from app.styles import inject_css
-from app.predict import render_predict_view
+from app.predict import render_predict_view, render_regression_view
 from app.chi_square import render_chi2_view
+from app.insights import render_insights
 
 
 st.set_page_config(
@@ -34,6 +36,14 @@ def render_dashboard_view(view: str, filtered, df, metric_choice: str, top_n: in
     
     if view == "Chi-Square":
         render_chi2_view(filtered)
+        return
+
+    if view == "Insights":
+        render_insights(filtered)
+        return
+
+    if view == "Regression":
+        render_regression_view(filtered)
         return
     
     if view == "Revenue":
@@ -124,20 +134,13 @@ def main() -> None:
     max_year = int(df["year"].max())
     all_genres = available_genres(df)
 
-    sidebar_state = render_sidebar(df, min_year, max_year, all_genres)
+    sidebar_state = resolve_sidebar_state(df, min_year, max_year, all_genres)
     filtered = apply_filters(
         df,
         sidebar_state.year_range,
         sidebar_state.selected_genres,
         sidebar_state.min_votes,
     )
-    previous = previous_period(
-        df,
-        sidebar_state.year_range,
-        sidebar_state.selected_genres,
-        sidebar_state.min_votes,
-    )
-
     corr_df = filtered[["budget", "revenue"]].dropna()
     corr_df = corr_df[(corr_df["budget"] > 0) & (corr_df["revenue"] > 0)]
     corr = corr_df["budget"].corr(corr_df["revenue"]) if len(corr_df) > 2 else 0
@@ -149,18 +152,23 @@ def main() -> None:
         roi_corr_df = roi_corr_df[roi_corr_df["roi"] <= roi_cap]
     roi_corr = roi_corr_df["budget"].corr(roi_corr_df["roi"]) if len(roi_corr_df) > 2 else 0
 
-    render_header(sidebar_state.year_range)
-    render_kpi_grid(compute_kpis(filtered, previous))
-    render_dashboard_view(
-        sidebar_state.view,
-        filtered,
-        df,
-        sidebar_state.metric_choice,
-        sidebar_state.top_n,
-        corr,
-        roi_corr,
-        roi_cap,
-    )
+    render_header(sidebar_state.year_range, min_year, max_year)
+    render_kpi_grid(compute_kpis(filtered))
+
+    filter_col, dashboard_col = st.columns([0.19, 0.81], gap="medium")
+    with filter_col:
+        sidebar_state = render_sidebar(df, min_year, max_year, all_genres)
+    with dashboard_col:
+        render_dashboard_view(
+            sidebar_state.view,
+            filtered,
+            df,
+            sidebar_state.metric_choice,
+            sidebar_state.top_n,
+            corr,
+            roi_corr,
+            roi_cap,
+        )
     st.divider()
     render_predict_view(df)
     render_footer()
