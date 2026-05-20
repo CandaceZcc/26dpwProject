@@ -2,19 +2,27 @@
 
 Repository: https://github.com/CandaceZcc/26dpwProject.git
 
+This is a TMDB/IMDB-style movie database and analytics project. The final application is a Python + Streamlit dashboard for exploring box-office success factors, genre profitability, release timing, rating distribution, chi-square tests, regression, prediction, insights, and CSV export.
+
+Main entry point: `streamlit_app.py`.
+
 ## Quick Start
 
-On Windows, double-click `run_windows.bat`. It will automatically create the `.venv` environment, install packages from `requirements.txt`, and start the Streamlit dashboard.
+Recommended Python version: Python 3.10 or later.
+
+On Windows, double-click:
+
+```text
+run_windows.bat
+```
+
+The script creates `.venv`, installs `requirements.txt`, and starts the Streamlit dashboard.
 
 After startup, open:
 
 ```text
 http://localhost:8501
 ```
-
-这是一个围绕 TMDB/IMDB 电影数据展开的数据库与数据可视化项目。当前主应用是基于 Python + Streamlit 的交互式电影分析 dashboard，用于回答 SDS 中提出的几个核心问题：票房成功因素、类型收益、上映时间影响，以及评分分布。
-
-项目现在只保留一个主入口：`streamlit_app.py`。
 
 ## 当前实现内容
 
@@ -50,9 +58,11 @@ http://localhost:8501
 ├── data/
 │   ├── processed_movies.csv    # dashboard 直接读取的数据文件
 │   └── dataset_summary.json    # 数据生成摘要
-├── tmdb.sql/                   # 原始 TMDB SQL 导出文件（提交 LMS 时可不包含）
+├── python清洗脚本/              # 原始数据清洗脚本
+├── tmdb.sql/                   # 原始 TMDB SQL 导出文件（LMS 提交包不包含）
 ├── GUI.png                     # dashboard 视觉参考图
-├── IMDB_SDS_Draft.docx         # 系统设计文档草稿
+├── Final_Report.docx           # 最终报告
+├── DPW_PPT_Final.pptx          # 最终展示 PPT
 ├── ERmodel.pdf                 # ER 模型文档
 ├── ER关系.pdf                  # ER 关系文档
 └── movie_dashboard.html        # 早期 HTML 预览版本，不是当前入口
@@ -62,13 +72,29 @@ http://localhost:8501
 
 ## LMS 提交包说明
 
-为了满足 100MB 上传限制，提交包不应包含 `.venv/`、`.git/`、`__pycache__/` 和原始数据/原始 SQL 导出文件。项目保留了：
+为了满足 100MB 上传限制，提交包不包含 `.venv/`、`.git/`、`.vs/`、`__pycache__/`、PPT 调试导出图、旧版调试 PPT，以及原始 SQL 导出文件 `tmdb.sql/`。项目保留了：
 
 - `requirements.txt`：用于重新安装 Python 依赖。
 - `data/processed_movies.csv`：清洗后的 dashboard 数据，可直接运行主应用。
+- `data/dataset_summary.json`：说明清洗后数据规模。
 - `python清洗脚本/` 和 `scripts/build_dataset.py`：数据清洗与生成代码，满足可复现性要求。
 
 因此，即使提交包中不包含 `tmdb.sql/`，主 Dashboard 仍可以通过 `data/processed_movies.csv` 正常运行。
+
+如果需要从原始数据重新生成完整数据集，请先将原始 SQL/CSV 数据放回对应位置，再运行数据清洗脚本和 `scripts/build_dataset.py`。
+
+## External Packages and References
+
+This project does not require a pre-trained external model file. The prediction models are trained at runtime from the cleaned local dataset in `app/predict.py` using scikit-learn. Main external packages:
+
+- Streamlit: https://streamlit.io/
+- pandas: https://pandas.pydata.org/
+- NumPy: https://numpy.org/
+- Plotly: https://plotly.com/python/
+- statsmodels: https://www.statsmodels.org/
+- scikit-learn: https://scikit-learn.org/
+
+Dataset source description: TMDB/IMDB-style movie metadata and ratings exported into the project SQL schema. The original dataset is excluded from the LMS archive because of the file-size limit; cleaned data and cleaning/generation code are included.
 
 ### 最简单方式：Windows
 
