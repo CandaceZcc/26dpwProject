@@ -1,5 +1,17 @@
 # 26dpwProject
 
+Repository: https://github.com/CandaceZcc/26dpwProject.git
+
+## Quick Start
+
+On Windows, double-click `run_windows.bat`. It will automatically create the `.venv` environment, install packages from `requirements.txt`, and start the Streamlit dashboard.
+
+After startup, open:
+
+```text
+http://localhost:8501
+```
+
 这是一个围绕 TMDB/IMDB 电影数据展开的数据库与数据可视化项目。当前主应用是基于 Python + Streamlit 的交互式电影分析 dashboard，用于回答 SDS 中提出的几个核心问题：票房成功因素、类型收益、上映时间影响，以及评分分布。
 
 项目现在只保留一个主入口：`streamlit_app.py`。
@@ -38,7 +50,7 @@
 ├── data/
 │   ├── processed_movies.csv    # dashboard 直接读取的数据文件
 │   └── dataset_summary.json    # 数据生成摘要
-├── tmdb.sql/                   # 原始 TMDB SQL 导出文件
+├── tmdb.sql/                   # 原始 TMDB SQL 导出文件（提交 LMS 时可不包含）
 ├── GUI.png                     # dashboard 视觉参考图
 ├── IMDB_SDS_Draft.docx         # 系统设计文档草稿
 ├── ERmodel.pdf                 # ER 模型文档
@@ -47,6 +59,16 @@
 ```
 
 ## 如何运行主 Dashboard
+
+## LMS 提交包说明
+
+为了满足 100MB 上传限制，提交包不应包含 `.venv/`、`.git/`、`__pycache__/` 和原始数据/原始 SQL 导出文件。项目保留了：
+
+- `requirements.txt`：用于重新安装 Python 依赖。
+- `data/processed_movies.csv`：清洗后的 dashboard 数据，可直接运行主应用。
+- `python清洗脚本/` 和 `scripts/build_dataset.py`：数据清洗与生成代码，满足可复现性要求。
+
+因此，即使提交包中不包含 `tmdb.sql/`，主 Dashboard 仍可以通过 `data/processed_movies.csv` 正常运行。
 
 ### 最简单方式：Windows
 
